@@ -1,28 +1,46 @@
-# 10x
+<h1 align="center">10x</h1>
 
-> AI coding assistant — code at 10x speed.
+<p align="center">
+  <b>The AI Coding Agent with Structural Integrity</b>
+</p>
 
-```
- ██╗  ██████╗  ██╗  ██╗
-███║ ██╔═████╗ ╚██╗██╔╝
-╚██║ ██║██╔██║  ╚███╔╝
- ██║ ████╔╝██║  ██╔██╗
- ██║ ╚██████╔╝ ██╔╝ ██╗
- ╚═╝  ╚═════╝  ╚═╝  ╚═╝
-```
+<p align="center">
+  <a href="https://github.com/10x-dev/10x/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <a href="https://www.npmjs.com/package/@10x/cli"><img src="https://img.shields.io/npm/v/@10x/cli.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@10x/cli"><img src="https://img.shields.io/npm/dm/@10x/cli.svg" alt="Downloads"></a>
+  <a href="https://github.com/10x-dev/10x"><img src="https://img.shields.io/github/stars/10x-dev/10x?style=social" alt="GitHub stars"></a>
+</p>
 
-10x is an open-source AI coding assistant that runs in your terminal. It automatically routes tasks to the best model for speed and cost efficiency, gives you powerful tools for reading/writing files and running commands, and remembers your conversation across sessions.
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#superpowers">Superpowers</a> •
+  <a href="#features">Features</a> •
+  <a href="#configuration">Configuration</a> •
+  <a href="#contributing">Contributing</a>
+</p>
 
-## Features
+<p align="center">
+  <img src="media/header.webp" alt="10x - AI coding assistant that deeply understands your codebase" width="100%">
+</p>
 
-- **Smart Model Routing** — Automatically selects the fastest model for each task
-- **Powerful Tools** — Read, write, edit files, search with glob & grep, run bash commands
-- **Session Memory** — Persistent conversations with SQLite, auto-compaction
-- **Skills & Superpowers** — Custom workflows and multi-step AI pipelines
-- **Image Understanding** — Analyze screenshots and diagrams with vision models
-- **BYOK Mode** — Bring your own OpenRouter API key
-- **Execute Mode** — Non-interactive scripting with `-x`
-- **Open Source** — MIT licensed
+---
+
+> **If you find 10x useful, please consider giving it a star!** Your support helps us grow and improve the project.
+
+---
+
+## Why 10x?
+
+| Feature | 10x | Claude Code | Cursor | GitHub Copilot |
+|---------|-----|-------------|--------|----------------|
+| **Superpowers (Multi-Step Pipelines)** | Chain models for complex workflows | No | No | No |
+| **Smart Model Routing** | Auto-picks fastest model per task | Single model | Single model | Single model |
+| **Token Speed** | Up to 1000 TPS with routing | ~50 TPS | Varies | Varies |
+| **Open Source** | MIT Licensed | Closed source | Closed source | Closed source |
+| **BYOK (Bring Your Own Key)** | Full control over costs | Subscription only | Subscription only | Subscription only |
+| **Custom Skills** | Create reusable workflows | Limited | Limited | No |
+| **Session Memory** | Persistent conversations | Limited context | Limited context | No memory |
+| **Self-Hosted** | Run anywhere | Cloud only | Cloud only | Cloud only |
 
 ## Quick Start
 
@@ -37,6 +55,86 @@ bun install -g @10x/cli
 export OPENROUTER_API_KEY=sk-or-...
 10x
 ```
+
+## Superpowers
+
+**Superpowers are multi-step AI workflows that chain different models together for complex tasks.** Each step can use a different model tier, automatically routing to the fastest model that can handle that step.
+
+### Built-in Superpowers
+
+| Command | Description |
+|---------|-------------|
+| `/review <path>` | Comprehensive code review with security, performance, and style analysis |
+| `/pr` | Generate PR description from staged/committed changes |
+| `/refactor <file>` | Guided refactoring with analysis, suggestions, and implementation |
+| `/debug <issue>` | Step-by-step debugging: reproduce, analyze, fix |
+| `/explain <path>` | Deep dive explanation of code architecture and flow |
+| `/test <file>` | Generate comprehensive test suite for a file |
+
+### How Superpowers Work
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  /review src/auth/                                              │
+├─────────────────────────────────────────────────────────────────┤
+│  Step 1: Scan & Understand (⚡⚡ superfast)                      │
+│  → Read files, identify patterns, map dependencies              │
+├─────────────────────────────────────────────────────────────────┤
+│  Step 2: Deep Analysis (◆ smart)                                │
+│  → Security audit, performance review, architecture feedback    │
+├─────────────────────────────────────────────────────────────────┤
+│  Step 3: Generate Report (⚡ fast)                               │
+│  → Compile findings into actionable recommendations             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Create Your Own Superpowers
+
+Define custom multi-step workflows in `.10x/superpowers/` or `~/.config/10x/superpowers/`:
+
+```markdown
+---
+name: debug
+description: Debug an issue step by step
+trigger: /debug
+---
+
+## Step 1: Understand the Issue (model: fast)
+
+{{input}}
+
+Find and read the relevant code files.
+
+## Step 2: Analyze Root Cause (model: smart)
+
+Based on the code:
+{{previous}}
+
+Identify the root cause of the issue.
+
+## Step 3: Implement Fix (model: smart)
+
+{{step2}}
+
+Implement a fix for the issue.
+```
+
+**Variables available:**
+- `{{input}}` — The user's original input
+- `{{previous}}` — Output from the previous step
+- `{{step1}}`, `{{step2}}`, etc. — Output from specific steps
+
+## Features
+
+- **Superpowers** — Multi-step AI pipelines that chain models for complex workflows
+- **Smart Model Routing** — Automatically selects the fastest model for each task
+- **Custom Skills** — Create reusable prompts and workflows
+- **Powerful Tools** — Read, write, edit files, search with glob & grep, run bash commands
+- **Session Memory** — Persistent conversations with SQLite, auto-compaction
+- **Image Understanding** — Analyze screenshots and diagrams with vision models
+- **BYOK Mode** — Bring your own OpenRouter API key for full cost control
+- **Execute Mode** — Non-interactive scripting with `-x`
+- **Open Source** — MIT licensed, fully auditable
 
 ## Model Tiers
 
@@ -68,24 +166,12 @@ export OPENROUTER_API_KEY=sk-or-...
 
 ### Image Analysis
 
-Analyze images using vision models:
-
 ```bash
 # Using the /image command
 /image screenshot.png What does this UI show?
 
 # Or reference images inline with @
 Explain the architecture in @diagram.png
-```
-
-### Superpowers (Multi-Step Workflows)
-
-Superpowers are pre-built multi-step AI workflows:
-
-```bash
-/review src/          # Comprehensive code review
-/pr                   # Generate PR description from changes
-/refactor utils.ts    # Guided refactoring workflow
 ```
 
 ## Execute Mode
@@ -107,7 +193,7 @@ cat error.log | 10x -x "explain this error"
 
 ### 10X.md Guidance Files
 
-Create a `10X.md` file in your project root to give 10x context about your project:
+Create a `10X.md` file in your project root to give 10x context:
 
 ```markdown
 # Project: MyApp
@@ -122,14 +208,14 @@ Create a `10X.md` file in your project root to give 10x context about your proje
 - Tests go in __tests__ directories
 ```
 
-10x automatically reads `10X.md` files from:
+10x reads `10X.md` files from:
 1. `~/.config/10x/10X.md` (global)
 2. Any `10X.md` in parent directories
 3. `./10X.md` (project root)
 
 ### Custom Skills
 
-Create reusable prompts as skills in `.10x/skills/` or `~/.config/10x/skills/`:
+Create reusable prompts in `.10x/skills/` or `~/.config/10x/skills/`:
 
 ```markdown
 ---
@@ -139,45 +225,12 @@ description: Generate a commit message
 
 Analyze the staged changes and generate a conventional commit message.
 Follow the format: type(scope): description
-
-Types: feat, fix, docs, style, refactor, test, chore
 ```
 
 Invoke with `/<skill-name>`:
 
 ```bash
 /commit
-```
-
-### Custom Superpowers
-
-Create multi-step workflows in `.10x/superpowers/` or `~/.config/10x/superpowers/`:
-
-```markdown
----
-name: debug
-description: Debug an issue step by step
-trigger: /debug
----
-
-## Step 1: Understand the Issue (model: fast)
-
-{{input}}
-
-Find and read the relevant code files.
-
-## Step 2: Analyze Root Cause (model: smart)
-
-Based on the code:
-{{previous}}
-
-Identify the root cause of the issue.
-
-## Step 3: Implement Fix (model: smart)
-
-{{step2}}
-
-Implement a fix for the issue.
 ```
 
 ### Permissions
@@ -217,104 +270,20 @@ Options:
   -h, --help             Display help
 ```
 
-## Development
-
-```bash
-# Clone the repo
-git clone https://github.com/10x-dev/10x.git
-cd 10x
-
-# Install dependencies
-bun install
-
-# Build all packages
-bun run build
-
-# Run CLI in development
-cd apps/cli && bun run dev
-
-# Run the built CLI
-./apps/cli/dist/index.js --byok
-```
-
-### Project Structure
-
-```
-10x/
-├── apps/
-│   ├── cli/              # CLI application (Ink + React)
-│   │   ├── src/
-│   │   │   ├── components/   # UI components
-│   │   │   ├── hooks/        # React hooks
-│   │   │   └── styles/       # Colors, banner
-│   │   └── dist/             # Built output
-│   └── web/              # Web app (Next.js)
-│       └── src/
-│           ├── app/          # App router pages
-│           └── lib/          # Database, auth
-├── packages/
-│   ├── core/             # Core logic
-│   │   └── src/
-│   │       ├── providers/    # OpenRouter client
-│   │       ├── router/       # Model routing
-│   │       ├── tools/        # Read, write, edit, glob, grep, bash
-│   │       ├── sessions/     # Session management
-│   │       ├── permissions/  # Permission system
-│   │       ├── guidance/     # 10X.md loader
-│   │       ├── skills/       # Skill loader
-│   │       ├── superpowers/  # Superpower system
-│   │       └── multimodal/   # Image handling
-│   └── shared/           # Shared types
-└── superpowers/          # Built-in superpowers
-```
-
-### Running Tests
-
-```bash
-bun run test
-```
-
 ## Requirements
 
 - [Bun](https://bun.sh) >= 1.0
 - [ripgrep](https://github.com/BurntSushi/ripgrep) (for grep tool)
-- OpenRouter API key (get one at [openrouter.ai](https://openrouter.ai))
+- OpenRouter API key ([openrouter.ai](https://openrouter.ai))
 
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `OPENROUTER_API_KEY` | Your OpenRouter API key |
-
-## Troubleshooting
-
-### "ripgrep not found"
-
-Install ripgrep for the grep tool to work:
+## Development
 
 ```bash
-# macOS
-brew install ripgrep
-
-# Ubuntu/Debian
-apt install ripgrep
-
-# Windows
-choco install ripgrep
-```
-
-### API Key Issues
-
-1. Make sure your OpenRouter API key starts with `sk-or-`
-2. Verify the key is valid at [openrouter.ai/keys](https://openrouter.ai/keys)
-3. Check you have credits available
-
-### Session Issues
-
-Sessions are stored in `~/.config/10x/sessions.db`. To reset:
-
-```bash
-rm ~/.config/10x/sessions.db
+git clone https://github.com/10x-dev/10x.git
+cd 10x
+bun install
+bun run build
+cd apps/cli && bun run dev
 ```
 
 ## Contributing
@@ -331,12 +300,8 @@ Contributions are welcome! Please read our contributing guidelines before submit
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Acknowledgments
-
-- [OpenRouter](https://openrouter.ai) for model API access
-- [Ink](https://github.com/vadimdemedes/ink) for the terminal UI framework
-- [Anthropic](https://anthropic.com) for Claude models
-
 ---
 
-**Star this repo if you find it useful!**
+<p align="center">
+  <b>If 10x helps you code faster, give it a ⭐ on GitHub!</b>
+</p>
