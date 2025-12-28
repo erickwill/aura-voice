@@ -1,7 +1,7 @@
 <h1 align="center">10x</h1>
 
 <p align="center">
-  <b>The AI Coding Agent with Structural Integrity</b>
+  <b>Up to 20x faster — with Superpowers</b>
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="media/header.webp" alt="10x - AI coding assistant that deeply understands your codebase" width="100%">
+  <img src="media/header.webp" alt="10x - Up to 20x faster, with Superpowers" width="100%">
 </p>
 
 ---
@@ -35,7 +35,7 @@
 |---------|-----|-------------|--------|----------------|
 | **Superpowers (Multi-Step Pipelines)** | Chain models for complex workflows | No | No | No |
 | **Smart Model Routing** | Auto-picks fastest model per task | Single model | Single model | Single model |
-| **Token Speed** | Up to 1000 TPS with routing | ~50 TPS | Varies | Varies |
+| **Speed** | Up to 20x faster | 1x | ~1x | ~1x |
 | **Open Source** | MIT Licensed | Closed source | Closed source | Closed source |
 | **BYOK (Bring Your Own Key)** | Full control over costs | Subscription only | Subscription only | Subscription only |
 | **Custom Skills** | Create reusable workflows | Limited | Limited | No |
@@ -142,9 +142,9 @@ Implement a fix for the issue.
 
 | Tier | Model | Speed | Best For |
 |------|-------|-------|----------|
-| ⚡⚡ Superfast | GPT OSS 20B | ~1000 TPS | Simple queries, explanations |
-| ⚡ Fast | Kimi K2 1T | ~200 TPS | Code generation, refactoring |
-| ◆ Smart | Claude Opus 4 | ~50 TPS | Complex reasoning, architecture |
+| ⚡⚡ Superfast | GPT OSS 20B | 20x | Simple queries, explanations |
+| ⚡ Fast | Kimi K2 1T | 4x | Code generation, refactoring |
+| ◆ Smart | Claude Opus 4 | 1x | Complex reasoning, architecture |
 
 ## Commands
 

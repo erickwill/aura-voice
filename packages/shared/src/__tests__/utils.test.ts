@@ -228,12 +228,12 @@ describe('isValidJson', () => {
 describe('safeJsonParse', () => {
   test('parses valid JSON', () => {
     expect(safeJsonParse('{"a":1}', {})).toEqual({ a: 1 });
-    expect(safeJsonParse('[1,2,3]', [])).toEqual([1, 2, 3]);
+    expect(safeJsonParse('[1,2,3]', [] as number[])).toEqual([1, 2, 3]);
   });
 
   test('returns default on error', () => {
     expect(safeJsonParse('invalid', { fallback: true })).toEqual({ fallback: true });
-    expect(safeJsonParse('', [])).toEqual([]);
+    expect(safeJsonParse('', [] as unknown[])).toEqual([]);
   });
 });
 

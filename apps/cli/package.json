@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "bun run src/index.tsx",
-    "build": "bun build src/index.tsx --outdir dist --target node",
+    "build": "bun build src/index.tsx --outdir dist --target bun",
     "start": "bun run dist/index.js",
     "test": "bun test",
     "lint": "eslint src/"
