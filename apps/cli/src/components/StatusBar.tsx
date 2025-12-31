@@ -1,83 +1,105 @@
-import React from 'react';
-import { Box, Text } from 'ink';
-import Spinner from 'ink-spinner';
-import { colors } from '../styles/colors.js';
-import type { ModelTier } from '@10x/shared';
+import { Show } from "solid-js"
+import { useTheme } from "../context"
+import type { ModelTier, RoutingMode } from "@10x/shared"
 
 interface StatusBarProps {
-  modelTier: ModelTier;
-  sessionName?: string;
-  isStreaming: boolean;
-  tokenUsage: { input: number; output: number };
-  byok?: boolean;
+  modelTier: ModelTier
+  routingMode: RoutingMode
+  sessionName?: string
+  isStreaming: boolean
+  tokenUsage: { input: number; output: number }
+  byok?: boolean
+  maxContextTokens?: number
+  cwd?: string
 }
 
-const tierConfig: Record<ModelTier, { icon: string; color: string }> = {
-  superfast: { icon: '⚡⚡', color: colors.tier.superfast },
-  fast: { icon: '⚡', color: colors.tier.fast },
-  smart: { icon: '◆', color: colors.tier.smart },
-};
+const tierConfig: Record<ModelTier, { icon: string; color: string; contextLimit: number }> = {
+  superfast: { icon: "⚡⚡", color: "#22D3EE", contextLimit: 128000 },
+  fast: { icon: "⚡", color: "#38BDF8", contextLimit: 128000 },
+  smart: { icon: "◆", color: "#0EA5E9", contextLimit: 200000 },
+}
 
 function formatTokens(count: number): string {
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}k`;
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`
   }
-  return count.toString();
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}k`
+  }
+  return count.toString()
 }
 
-export function StatusBar({
-  modelTier,
-  sessionName,
-  isStreaming,
-  tokenUsage,
-  byok = false,
-}: StatusBarProps) {
-  const tier = tierConfig[modelTier];
-  const totalTokens = tokenUsage.input + tokenUsage.output;
+function getUsageColor(percentage: number): string {
+  if (percentage >= 90) return "#EF4444"
+  if (percentage >= 75) return "#F59E0B"
+  return "#737373"
+}
+
+function truncatePath(path: string, maxLength: number = 30): string {
+  if (path.length <= maxLength) return path
+
+  const parts = path.split("/")
+  let result = ""
+
+  for (let i = parts.length - 1; i >= 0 && result.length < maxLength - 4; i--) {
+    const newPart = parts[i] + (result ? "/" + result : "")
+    if (newPart.length > maxLength - 4) break
+    result = newPart
+  }
+
+  return "~/" + result
+}
+
+export function StatusBar(props: StatusBarProps) {
+  const { theme } = useTheme()
+
+  const tier = () => tierConfig[props.modelTier]
+  const totalTokens = () => props.tokenUsage.input + props.tokenUsage.output
+  const isAutoMode = () => props.routingMode === "auto"
+
+  const contextLimit = () => props.maxContextTokens ?? tier().contextLimit
+  const usagePercentage = () => (contextLimit() > 0 ? (totalTokens() / contextLimit()) * 100 : 0)
+  const usageColor = () => getUsageColor(usagePercentage())
+  const showContextWarning = () => usagePercentage() >= 75
 
   return (
-    <Box
-      borderStyle="single"
-      borderColor={colors.ui.border}
-      paddingX={1}
+    <box
+      flexDirection="row"
+      paddingLeft={1}
+      paddingRight={1}
+      paddingTop={1}
+      paddingBottom={1}
       justifyContent="space-between"
+      border={["bottom"]}
+      borderColor={showContextWarning() ? theme.warning : theme.border}
     >
-      <Box gap={1}>
-        <Text color={colors.brand.primary} bold>
-          10x
-        </Text>
-        <Text color={colors.ui.muted}>•</Text>
-        {byok && (
-          <>
-            <Text color={colors.ui.textSecondary}>byok</Text>
-            <Text color={colors.ui.muted}>•</Text>
-          </>
-        )}
-        <Text color={tier.color}>
-          {tier.icon} {modelTier}
-        </Text>
-        {isStreaming && (
-          <>
-            <Text color={colors.ui.muted}> </Text>
-            <Text color={tier.color}>
-              <Spinner type="dots" />
-            </Text>
-          </>
-        )}
-      </Box>
+      {/* Left section: branding, mode, model */}
+      <text>
+        <span style={{ fg: theme.primary, bold: true }}>10x</span>
+        <span style={{ fg: theme.textMuted }}> • </span>
+        <Show when={props.byok}>
+          <span style={{ fg: theme.textMuted }}>byok • </span>
+        </Show>
+        <span style={{ fg: tier().color }}>{tier().icon} {isAutoMode() ? `auto (${props.modelTier})` : props.modelTier}</span>
+        <Show when={props.isStreaming}>
+          <span style={{ fg: tier().color }}> ...</span>
+        </Show>
+      </text>
 
-      <Box gap={1}>
-        {sessionName && (
-          <>
-            <Text color={colors.ui.muted}>session:</Text>
-            <Text color={colors.ui.text}>{sessionName}</Text>
-            <Text color={colors.ui.muted}>•</Text>
-          </>
-        )}
-        {totalTokens > 0 && (
-          <Text color={colors.ui.muted}>{formatTokens(totalTokens)} tokens</Text>
-        )}
-      </Box>
-    </Box>
-  );
+      {/* Right section: cwd, tokens */}
+      <text>
+        <Show when={props.cwd}>
+          <span style={{ fg: theme.textMuted }}>℗ {truncatePath(props.cwd!)} • </span>
+        </Show>
+        <Show when={props.sessionName}>
+          <span style={{ fg: theme.text }}>{props.sessionName} • </span>
+        </Show>
+        <span style={{ fg: usageColor() }}>{formatTokens(totalTokens())}</span>
+        <span style={{ fg: theme.textMuted }}>/{formatTokens(contextLimit())}</span>
+        <Show when={showContextWarning()}>
+          <span style={{ fg: theme.warning }}> ({usagePercentage().toFixed(0)}%)</span>
+        </Show>
+      </text>
+    </box>
+  )
 }

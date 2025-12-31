@@ -1,6 +1,11 @@
-export { App } from './App.js';
-export { StatusBar } from './StatusBar.js';
-export { MessageList } from './MessageList.js';
-export { InputArea } from './InputArea.js';
-export { ApiKeyPrompt } from './ApiKeyPrompt.js';
-export { ToolCallDisplay } from './ToolCallDisplay.js';
+export { App } from "./App"
+export { StatusBar } from "./StatusBar"
+export { MessageList } from "./MessageList"
+export { InputArea } from "./InputArea"
+export { ApiKeyPrompt } from "./ApiKeyPrompt"
+export { ToolCallDisplay } from "./ToolCallDisplay"
+export { CommandPalette, getAllCommands, getFilteredCommands, builtinCommands, type Command } from "./CommandPalette"
+export { UserMessage } from "./UserMessage"
+export { AssistantMessage } from "./AssistantMessage"
+export { Markdown } from "./Markdown"
+export { PermissionPrompt } from "./PermissionPrompt"

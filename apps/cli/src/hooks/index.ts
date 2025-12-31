@@ -1,3 +1,3 @@
-export { useChat } from './useChat.js';
-export { useSession } from './useSession.js';
-export { usePermissions } from './usePermissions.js';
+export { useChat } from "./useChat"
+export { useSession } from "./useSession"
+export { usePermissions } from "./usePermissions"

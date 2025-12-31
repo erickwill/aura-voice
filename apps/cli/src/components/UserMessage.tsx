@@ -1,22 +1,22 @@
-import React from 'react';
-import { Box, Text } from 'ink';
-import { colors } from '../styles/colors.js';
+import { useTheme } from "../context"
 
 interface UserMessageProps {
-  content: string;
+  content: string
 }
 
-export function UserMessage({ content }: UserMessageProps) {
+export function UserMessage(props: UserMessageProps) {
+  const { theme } = useTheme()
+
   return (
-    <Box flexDirection="column" marginY={1}>
-      <Box marginBottom={1}>
-        <Text color={colors.semantic.info} bold>
+    <box flexDirection="column" marginTop={1} marginBottom={1}>
+      <box marginBottom={1}>
+        <text fg={theme.info} bold>
           You
-        </Text>
-      </Box>
-      <Box paddingLeft={2}>
-        <Text wrap="wrap">{content}</Text>
-      </Box>
-    </Box>
-  );
+        </text>
+      </box>
+      <box paddingLeft={2}>
+        <text fg={theme.text}>{props.content}</text>
+      </box>
+    </box>
+  )
 }

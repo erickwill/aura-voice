@@ -1,51 +1,90 @@
-import React from 'react';
-import { Box, Text } from 'ink';
-import { colors } from '../styles/colors.js';
-import { UserMessage } from './UserMessage.js';
-import { AssistantMessage } from './AssistantMessage.js';
-import type { Message } from '@10x/shared';
+import { createMemo, For, Show } from "solid-js"
+import { useTheme } from "../context"
+import { UserMessage } from "./UserMessage"
+import { AssistantMessage } from "./AssistantMessage"
+import type { Message } from "@10x/shared"
 
 interface MessageListProps {
-  messages: Message[];
-  isStreaming: boolean;
+  messages: Message[]
+  isStreaming: boolean
+  maxHeight?: number | string
 }
 
-export function MessageList({ messages, isStreaming }: MessageListProps) {
+function generateMessageId(message: Message, index: number): string {
+  const contentPreview = message.content.slice(0, 50).replace(/\s+/g, "_")
+  return `${message.role}-${index}-${contentPreview}`
+}
+
+interface MessageWithId extends Message {
+  _stableId: string
+}
+
+export function MessageList(props: MessageListProps) {
+  const { theme } = useTheme()
+
+  // Assign stable IDs to messages
+  const messagesWithIds = createMemo((): MessageWithId[] => {
+    return props.messages.map((message, index) => ({
+      ...message,
+      _stableId: generateMessageId(message, index),
+    }))
+  })
+
+  // Split messages: completed ones vs current streaming one
+  const lastMessage = () => messagesWithIds()[messagesWithIds().length - 1]
+  const isLastStreaming = () => props.isStreaming && lastMessage()?.role === "assistant"
+
+  // Completed messages (all except the currently streaming one)
+  const completedMessages = createMemo(() =>
+    isLastStreaming() ? messagesWithIds().slice(0, -1) : messagesWithIds()
+  )
+
+  // The currently streaming message (if any)
+  const streamingMessage = () => (isLastStreaming() ? lastMessage() : null)
+
   return (
-    <Box flexDirection="column" gap={1}>
-      {messages.map((message, index) => {
-        const isLast = index === messages.length - 1;
-        const isStreamingThis = isStreaming && isLast && message.role === 'assistant';
+    <scrollbox
+      scrollY={true}
+      scrollX={false}
+      stickyScroll={true}
+      stickyStart="bottom"
+      flexGrow={1}
+      maxHeight={props.maxHeight}
+    >
+      <box flexDirection="column" gap={1}>
+        {/* Render all messages in order */}
+        <For each={completedMessages()}>
+          {(message) => {
+            if (message.role === "user") {
+              return <UserMessage content={message.content} />
+            }
+            if (message.role === "assistant") {
+              return <AssistantMessage message={message} isStreaming={false} />
+            }
+            if (message.role === "system") {
+              return (
+                <box paddingLeft={2} paddingTop={1} paddingBottom={1}>
+                  <text fg={theme.textMuted}>{message.content}</text>
+                </box>
+              )
+            }
+            return null
+          }}
+        </For>
 
-        if (message.role === 'user') {
-          return <UserMessage key={index} content={message.content} />;
-        }
+        {/* Currently streaming message */}
+        <Show when={streamingMessage()}>
+          {(msg) => <AssistantMessage message={msg()} isStreaming={true} />}
+        </Show>
 
-        if (message.role === 'assistant') {
-          return (
-            <AssistantMessage
-              key={index}
-              message={message}
-              isStreaming={isStreamingThis}
-            />
-          );
-        }
-
-        if (message.role === 'system') {
-          return (
-            <Box key={index} paddingLeft={2} paddingY={1}>
-              <Text color={colors.ui.muted}>{message.content}</Text>
-            </Box>
-          );
-        }
-
-        return null;
-      })}
-      {isStreaming && messages[messages.length - 1]?.role !== 'assistant' && (
-        <Box>
-          <Text color={colors.ui.muted}>Thinking...</Text>
-        </Box>
-      )}
-    </Box>
-  );
+        {/* Thinking indicator */}
+        <Show when={props.isStreaming && !streamingMessage()}>
+          <box paddingLeft={2} gap={1}>
+            <text fg={theme.primary}>...</text>
+            <text fg={theme.textMuted}>Thinking...</text>
+          </box>
+        </Show>
+      </box>
+    </scrollbox>
+  )
 }

@@ -1,121 +1,105 @@
-import React, { useState, useCallback } from 'react';
-import { Box, Text, useInput } from 'ink';
-import { colors } from '../styles/colors.js';
+import { createSignal, Show } from "solid-js"
+import { useKeyboard } from "@opentui/solid"
+import { useTheme } from "../context"
 
 interface PermissionPromptProps {
-  tool: string;
-  input: string;
-  context?: string;
-  onResponse: (allowed: boolean) => void;
+  tool: string
+  input: string
+  context?: string
+  onResponse: (allowed: boolean) => void
 }
 
-export function PermissionPrompt({
-  tool,
-  input,
-  context,
-  onResponse,
-}: PermissionPromptProps) {
-  const [submitted, setSubmitted] = useState(false);
+function getToolIcon(tool: string): string {
+  switch (tool) {
+    case "bash":
+      return "$"
+    case "write":
+      return "+"
+    case "edit":
+      return "~"
+    case "read":
+      return "#"
+    default:
+      return "?"
+  }
+}
 
-  useInput(
-    (char, key) => {
-      if (submitted) return;
+function getToolColor(tool: string, theme: any): any {
+  switch (tool) {
+    case "bash":
+      return theme.warning
+    case "write":
+      return theme.success
+    case "edit":
+      return theme.info
+    default:
+      return theme.textMuted
+  }
+}
 
-      const lower = char.toLowerCase();
-      if (lower === 'y') {
-        setSubmitted(true);
-        onResponse(true);
-      } else if (lower === 'n' || key.escape) {
-        setSubmitted(true);
-        onResponse(false);
-      }
-    },
-    { isActive: !submitted }
-  );
+export function PermissionPrompt(props: PermissionPromptProps) {
+  const { theme } = useTheme()
+  const [submitted, setSubmitted] = createSignal(false)
 
-  // Get tool icon
-  const getToolIcon = (tool: string): string => {
-    switch (tool) {
-      case 'bash':
-        return '$';
-      case 'write':
-        return '+';
-      case 'edit':
-        return '~';
-      case 'read':
-        return '#';
-      default:
-        return '?';
+  useKeyboard((evt) => {
+    if (submitted()) return
+
+    const input = evt.name?.toLowerCase() || ""
+
+    if (input === "y") {
+      setSubmitted(true)
+      props.onResponse(true)
+    } else if (input === "n" || input === "escape") {
+      setSubmitted(true)
+      props.onResponse(false)
     }
-  };
+  })
 
-  // Get tool color
-  const getToolColor = (tool: string): string => {
-    switch (tool) {
-      case 'bash':
-        return colors.semantic.warning;
-      case 'write':
-        return colors.semantic.success;
-      case 'edit':
-        return colors.semantic.info;
-      default:
-        return colors.ui.muted;
-    }
-  };
-
-  // Truncate long inputs
-  const displayInput =
-    input.length > 80 ? input.slice(0, 77) + '...' : input;
+  const displayInput = () => (props.input.length > 80 ? props.input.slice(0, 77) + "..." : props.input)
 
   return (
-    <Box
+    <box
       flexDirection="column"
-      borderStyle="round"
-      borderColor={colors.semantic.warning}
-      paddingX={1}
-      marginY={1}
+      border={["top", "bottom", "left", "right"]}
+      borderColor={theme.warning}
+      paddingLeft={1}
+      paddingRight={1}
+      marginTop={1}
+      marginBottom={1}
     >
-      <Box>
-        <Text color={colors.semantic.warning} bold>
+      <box>
+        <text fg={theme.warning} bold>
           Permission Required
-        </Text>
-      </Box>
+        </text>
+      </box>
 
-      <Box marginTop={1}>
-        <Text color={getToolColor(tool)}>
-          {getToolIcon(tool)}{' '}
-        </Text>
-        <Text bold color={colors.ui.text}>
-          {tool}
-        </Text>
-      </Box>
+      <box marginTop={1}>
+        <text fg={getToolColor(props.tool, theme)}>{getToolIcon(props.tool)} </text>
+        <text bold fg={theme.text}>
+          {props.tool}
+        </text>
+      </box>
 
-      <Box marginTop={1} flexDirection="column">
-        <Text color={colors.ui.muted} wrap="wrap">
-          {displayInput}
-        </Text>
-      </Box>
+      <box marginTop={1} flexDirection="column">
+        <text fg={theme.textMuted}>{displayInput()}</text>
+      </box>
 
-      {context && (
-        <Box marginTop={1}>
-          <Text color={colors.ui.muted} dimColor>
-            {context}
-          </Text>
-        </Box>
-      )}
+      <Show when={props.context}>
+        <box marginTop={1}>
+          <text fg={theme.textMuted}>{props.context}</text>
+        </box>
+      </Show>
 
-      <Box marginTop={1}>
-        <Text>
-          <Text color={colors.semantic.success} bold>
-            [Y]
-          </Text>
-          <Text color={colors.ui.muted}> Allow </Text>
-          <Text color={colors.semantic.error} bold>
-            [N]
-          </Text>
-          <Text color={colors.ui.muted}> Deny </Text>
-        </Text>
-      </Box>
-    </Box>
-  );
+      <box marginTop={1}>
+        <text fg={theme.success} bold>
+          [Y]
+        </text>
+        <text fg={theme.textMuted}> Allow </text>
+        <text fg={theme.error} bold>
+          [N]
+        </text>
+        <text fg={theme.textMuted}> Deny </text>
+      </box>
+    </box>
+  )
 }

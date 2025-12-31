@@ -1,165 +1,151 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { SessionManager } from '@10x/core';
-import type { Session, SessionSummary } from '@10x/core';
-import type { ModelTier, Message } from '@10x/shared';
+import { createSignal, createEffect, onMount } from "solid-js"
+import { SessionManager } from "@10x/core"
+import type { Session, SessionSummary } from "@10x/core"
+import type { ModelTier, Message } from "@10x/shared"
 
 interface UseSessionOptions {
-  autoResume?: boolean;
-  defaultModel?: ModelTier;
+  autoResume?: boolean
+  defaultModel?: ModelTier
 }
 
 interface UseSessionReturn {
-  session: Session | null;
-  sessions: SessionSummary[];
-  create: (name?: string) => Session;
-  resume: (nameOrId: string) => Session | null;
-  resumeLast: () => Session | null;
-  rename: (name: string) => boolean;
-  clear: () => void;
-  fork: (name?: string) => Session | null;
-  list: () => SessionSummary[];
-  addMessage: (message: Message) => void;
-  needsCompaction: () => boolean;
-  tokenCount: number;
-  contextWindow: number;
+  session: Session | null
+  sessions: SessionSummary[]
+  create: (name?: string) => Session
+  resume: (nameOrId: string) => Session | null
+  resumeLast: () => Session | null
+  rename: (name: string) => boolean
+  clear: () => void
+  fork: (name?: string) => Session | null
+  list: () => SessionSummary[]
+  addMessage: (message: Message) => void
+  needsCompaction: () => boolean
+  tokenCount: number
+  contextWindow: number
 }
 
 export function useSession({
   autoResume = false,
-  defaultModel = 'smart',
+  defaultModel = "smart",
 }: UseSessionOptions = {}): UseSessionReturn {
-  const managerRef = useRef<SessionManager | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  let manager: SessionManager | null = null
+  const [session, setSession] = createSignal<Session | null>(null)
+  const [sessions, setSessions] = createSignal<SessionSummary[]>([])
 
-  // Initialize manager
-  const getManager = useCallback(() => {
-    if (!managerRef.current) {
-      managerRef.current = new SessionManager();
+  const getManager = () => {
+    if (!manager) {
+      manager = new SessionManager()
     }
-    return managerRef.current;
-  }, []);
+    return manager
+  }
 
   // Load sessions list on mount
-  useEffect(() => {
-    const manager = getManager();
-    setSessions(manager.list());
+  onMount(() => {
+    const mgr = getManager()
+    setSessions(mgr.list())
 
     if (autoResume) {
-      const last = manager.resumeLast();
+      const last = mgr.resumeLast()
       if (last) {
-        setSession(last);
+        setSession(last)
       }
     }
-  }, [autoResume, getManager]);
+  })
 
-  const create = useCallback(
-    (name?: string) => {
-      const manager = getManager();
-      const newSession = manager.create({ name, model: defaultModel });
-      setSession(newSession);
-      setSessions(manager.list());
-      return newSession;
-    },
-    [getManager, defaultModel]
-  );
+  const create = (name?: string) => {
+    const mgr = getManager()
+    const newSession = mgr.create({ name, model: defaultModel })
+    setSession(newSession)
+    setSessions(mgr.list())
+    return newSession
+  }
 
-  const resume = useCallback(
-    (nameOrId: string) => {
-      const manager = getManager();
+  const resume = (nameOrId: string) => {
+    const mgr = getManager()
 
-      // Try by name first
-      let found = manager.loadByName(nameOrId);
-      if (!found) {
-        // Try by ID
-        found = manager.load(nameOrId);
-      }
+    let found = mgr.loadByName(nameOrId)
+    if (!found) {
+      found = mgr.load(nameOrId)
+    }
 
-      if (found) {
-        setSession(found);
-      }
-      return found;
-    },
-    [getManager]
-  );
+    if (found) {
+      setSession(found)
+    }
+    return found
+  }
 
-  const resumeLast = useCallback(() => {
-    const manager = getManager();
-    const last = manager.resumeLast();
+  const resumeLast = () => {
+    const mgr = getManager()
+    const last = mgr.resumeLast()
     if (last) {
-      setSession(last);
+      setSession(last)
     }
-    return last;
-  }, [getManager]);
+    return last
+  }
 
-  const rename = useCallback(
-    (name: string) => {
-      const manager = getManager();
-      const success = manager.rename(name);
-      if (success) {
-        setSession(manager.getCurrent());
-        setSessions(manager.list());
-      }
-      return success;
-    },
-    [getManager]
-  );
+  const rename = (name: string) => {
+    const mgr = getManager()
+    const success = mgr.rename(name)
+    if (success) {
+      setSession(mgr.getCurrent())
+      setSessions(mgr.list())
+    }
+    return success
+  }
 
-  const clear = useCallback(() => {
-    const manager = getManager();
-    manager.clear();
-    setSession(manager.getCurrent());
-  }, [getManager]);
+  const clear = () => {
+    const mgr = getManager()
+    mgr.clear()
+    setSession(mgr.getCurrent())
+  }
 
-  const fork = useCallback(
-    (name?: string) => {
-      const manager = getManager();
-      const forked = manager.fork(name);
-      if (forked) {
-        setSession(forked);
-        setSessions(manager.list());
-      }
-      return forked;
-    },
-    [getManager]
-  );
+  const fork = (name?: string) => {
+    const mgr = getManager()
+    const forked = mgr.fork(name)
+    if (forked) {
+      setSession(forked)
+      setSessions(mgr.list())
+    }
+    return forked
+  }
 
-  const list = useCallback(() => {
-    const manager = getManager();
-    const sessionList = manager.list();
-    setSessions(sessionList);
-    return sessionList;
-  }, [getManager]);
+  const list = () => {
+    const mgr = getManager()
+    const sessionList = mgr.list()
+    setSessions(sessionList)
+    return sessionList
+  }
 
-  const addMessage = useCallback(
-    (message: Message) => {
-      const manager = getManager();
+  const addMessage = (message: Message) => {
+    const mgr = getManager()
 
-      // Create session if needed
-      if (!manager.getCurrent()) {
-        manager.create({ model: defaultModel });
-      }
+    if (!mgr.getCurrent()) {
+      mgr.create({ model: defaultModel })
+    }
 
-      manager.addMessage(message);
-      setSession({ ...manager.getCurrent()! });
-    },
-    [getManager, defaultModel]
-  );
+    mgr.addMessage(message)
+    setSession({ ...mgr.getCurrent()! })
+  }
 
-  const needsCompaction = useCallback(() => {
-    const manager = getManager();
-    return manager.needsCompaction();
-  }, [getManager]);
+  const needsCompaction = () => {
+    const mgr = getManager()
+    return mgr.needsCompaction()
+  }
 
-  const tokenCount = session
-    ? session.tokenUsage.input + session.tokenUsage.output
-    : 0;
+  const tokenCount = () => {
+    const s = session()
+    return s ? s.tokenUsage.input + s.tokenUsage.output : 0
+  }
 
-  const contextWindow = getManager().getContextWindow();
+  const contextWindow = () => getManager().getContextWindow()
 
   return {
-    session,
-    sessions,
+    get session() {
+      return session()
+    },
+    get sessions() {
+      return sessions()
+    },
     create,
     resume,
     resumeLast,
@@ -169,7 +155,11 @@ export function useSession({
     list,
     addMessage,
     needsCompaction,
-    tokenCount,
-    contextWindow,
-  };
+    get tokenCount() {
+      return tokenCount()
+    },
+    get contextWindow() {
+      return contextWindow()
+    },
+  }
 }
