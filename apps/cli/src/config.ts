@@ -3,8 +3,12 @@ import { homedir } from 'os';
 import { join } from 'path';
 import type { ModelTier } from '@10x/shared';
 
+export type AuthMode = 'byok' | '10x';
+
 export interface AppConfig {
-  apiKey?: string;
+  apiKey?: string;          // OpenRouter API key (BYOK mode)
+  authToken?: string;       // 10x API token (10x auth mode)
+  authMode?: AuthMode;      // Which auth mode is active
   defaultModel: ModelTier;
   lastSessionId?: string;
 }
@@ -53,27 +57,20 @@ export function saveConfig(config: AppConfig): void {
 }
 
 /**
- * Get the API key from environment or config
- * Priority: OPENROUTER_API_KEY env var > config file
+ * Get the API key from config (BYOK mode)
  */
 export function getApiKey(): string | null {
-  // Check environment variable first
-  const envKey = process.env.OPENROUTER_API_KEY;
-  if (envKey) {
-    return envKey;
-  }
-
-  // Fall back to config file
   const config = loadConfig();
   return config.apiKey ?? null;
 }
 
 /**
- * Save the API key to config
+ * Save the API key to config (BYOK mode)
  */
 export function saveApiKey(apiKey: string): void {
   const config = loadConfig();
   config.apiKey = apiKey;
+  config.authMode = 'byok';
   saveConfig(config);
 }
 
@@ -90,6 +87,79 @@ export function hasApiKey(): boolean {
 export function clearApiKey(): void {
   const config = loadConfig();
   delete config.apiKey;
+  if (config.authMode === 'byok') {
+    delete config.authMode;
+  }
+  saveConfig(config);
+}
+
+/**
+ * Get the 10x auth token from config
+ */
+export function getAuthToken(): string | null {
+  const config = loadConfig();
+  return config.authToken ?? null;
+}
+
+/**
+ * Save the 10x auth token to config
+ */
+export function saveAuthToken(token: string): void {
+  const config = loadConfig();
+  config.authToken = token;
+  config.authMode = '10x';
+  saveConfig(config);
+}
+
+/**
+ * Check if 10x auth token is configured
+ */
+export function hasAuthToken(): boolean {
+  return getAuthToken() !== null;
+}
+
+/**
+ * Clear the 10x auth token
+ */
+export function clearAuthToken(): void {
+  const config = loadConfig();
+  delete config.authToken;
+  if (config.authMode === '10x') {
+    delete config.authMode;
+  }
+  saveConfig(config);
+}
+
+/**
+ * Get the current auth mode
+ */
+export function getAuthMode(): AuthMode | null {
+  const config = loadConfig();
+  return config.authMode ?? null;
+}
+
+/**
+ * Check if user is authenticated (either mode)
+ */
+export function isAuthenticated(): boolean {
+  const mode = getAuthMode();
+  if (mode === 'byok') {
+    return hasApiKey();
+  }
+  if (mode === '10x') {
+    return hasAuthToken();
+  }
+  return false;
+}
+
+/**
+ * Clear all auth data
+ */
+export function clearAuth(): void {
+  const config = loadConfig();
+  delete config.apiKey;
+  delete config.authToken;
+  delete config.authMode;
   saveConfig(config);
 }
 

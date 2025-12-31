@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
@@ -12,7 +14,7 @@ export default function Home() {
         <div className="bg-gray-900 rounded-lg p-6 mb-8 text-left max-w-md mx-auto">
           <p className="text-gray-400 mb-2">Install with:</p>
           <code className="text-green-400 font-mono">
-            curl -fsSL https://10x.dev/install | sh
+            curl -fsSL https://try10x.co/install | sh
           </code>
         </div>
 
@@ -23,12 +25,12 @@ export default function Home() {
           >
             GitHub
           </a>
-          <a
-            href="/docs"
-            className="px-6 py-3 bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
+          <Link
+            href="/pricing"
+            className="px-6 py-3 bg-green-500 hover:bg-green-600 text-black font-medium rounded-lg transition-colors"
           >
-            Documentation
-          </a>
+            Pricing
+          </Link>
         </div>
       </div>
 

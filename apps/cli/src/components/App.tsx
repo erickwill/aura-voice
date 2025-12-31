@@ -4,13 +4,14 @@ import { useTheme, useExit } from "../context"
 import { bannerLines } from "../styles/banner"
 import { InputArea } from "./InputArea"
 import { MessageList } from "./MessageList"
-import { ApiKeyPrompt } from "./ApiKeyPrompt"
+import { AuthPrompt } from "./AuthPrompt"
+import { DeviceAuthFlow } from "./DeviceAuthFlow"
 import { PermissionPrompt } from "./PermissionPrompt"
 import { getAllCommands, getFilteredCommands } from "./CommandPalette"
 import { useChat } from "../hooks/useChat"
 import { useSession } from "../hooks/useSession"
 import { usePermissions } from "../hooks/usePermissions"
-import { saveApiKey, getApiKey, clearApiKey } from "../config"
+import { saveApiKey, getApiKey, getAuthToken, saveAuthToken, clearAuth, isAuthenticated, getAuthMode, type AuthMode } from "../config"
 import {
   buildFullSystemPrompt,
   buildSkillsPromptSection,
@@ -35,7 +36,7 @@ interface AppProps {
   continueSession?: boolean
 }
 
-type AppState = "loading" | "need_api_key" | "ready"
+type AppState = "loading" | "need_auth" | "device_auth" | "ready"
 
 export function App(props: AppProps) {
   const initialModel = () => props.initialModel ?? "smart"
@@ -48,6 +49,8 @@ export function App(props: AppProps) {
 
   const [appState, setAppState] = createSignal<AppState>("loading")
   const [apiKey, setApiKey] = createSignal<string | null>(null)
+  const [authToken, setAuthToken] = createSignal<string | null>(null)
+  const [authMode, setAuthMode] = createSignal<AuthMode | null>(null)
   const [inputValue, setInputValue] = createSignal("")
   const [showWelcome, setShowWelcome] = createSignal(true)
   const [systemMessage, setSystemMessage] = createSignal<string | null>(null)
@@ -62,9 +65,23 @@ export function App(props: AppProps) {
 
   // Initialize on mount
   onMount(() => {
-    const existingKey = getApiKey()
-    if (existingKey) {
-      setApiKey(existingKey)
+    // Check if user is authenticated (either BYOK or 10x auth)
+    if (isAuthenticated()) {
+      const mode = getAuthMode()
+      setAuthMode(mode)
+
+      if (mode === "byok") {
+        const existingKey = getApiKey()
+        if (existingKey) {
+          setApiKey(existingKey)
+        }
+      } else if (mode === "10x") {
+        const existingToken = getAuthToken()
+        if (existingToken) {
+          setAuthToken(existingToken)
+        }
+      }
+
       setAppState("ready")
 
       // Handle session resume
@@ -83,10 +100,8 @@ export function App(props: AppProps) {
           setSystemMessage(`Continued session: ${last.name ?? last.id}`)
         }
       }
-    } else if (byok()) {
-      setAppState("need_api_key")
     } else {
-      setAppState("need_api_key")
+      setAppState("need_auth")
     }
   })
 
@@ -99,9 +114,11 @@ export function App(props: AppProps) {
     return buildFullSystemPrompt(basePrompt, combinedExtras)
   })
 
-  // Chat hook
+  // Chat hook - configured based on auth mode
   const chat = useChat({
-    apiKey: apiKey() ?? "",
+    apiKey: apiKey() ?? undefined,
+    authToken: authToken() ?? undefined,
+    authMode: authMode() ?? undefined,
     defaultTier: initialModel(),
     routingMode: routingMode(),
     systemPrompt: systemPrompt(),
@@ -127,6 +144,11 @@ export function App(props: AppProps) {
 
   // Global keyboard handling
   useKeyboard((evt) => {
+    // Device auth flow handles its own keyboard input
+    if (appState() === "device_auth") {
+      return
+    }
+
     if (appState() !== "ready") return
 
     if (evt.ctrl && evt.name === "c") {
@@ -144,10 +166,30 @@ export function App(props: AppProps) {
   const handleApiKeySubmit = (key: string) => {
     saveApiKey(key)
     setApiKey(key)
+    setAuthMode("byok")
     setAppState("ready")
   }
 
-  const handleApiKeyCancel = () => {
+  const handleWebAuthSelect = () => {
+    setAppState("device_auth")
+  }
+
+  const handleDeviceAuthSuccess = (token: string) => {
+    saveAuthToken(token)
+    setAuthToken(token)
+    setAuthMode("10x")
+    setAppState("ready")
+  }
+
+  const handleDeviceAuthError = (error: string) => {
+    setSystemMessage(`Authentication error: ${error}`)
+  }
+
+  const handleDeviceAuthCancel = () => {
+    setAppState("need_auth")
+  }
+
+  const handleAuthCancel = () => {
     exit()
   }
 
@@ -353,9 +395,11 @@ Superpowers: /review, /pr, /refactor [args]`)
         }
 
         case "logout":
-          clearApiKey()
+          clearAuth()
           setApiKey(null)
-          setAppState("need_api_key")
+          setAuthToken(null)
+          setAuthMode(null)
+          setAppState("need_auth")
           setInputValue("")
           return
 
@@ -456,8 +500,8 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
           </box>
         </Match>
 
-        {/* API key prompt */}
-        <Match when={appState() === "need_api_key"}>
+        {/* Auth prompt */}
+        <Match when={appState() === "need_auth"}>
           <box flexDirection="column">
             <box paddingLeft={1} paddingRight={1} paddingTop={1} paddingBottom={1} flexDirection="column">
               <text fg="#22D3EE">{bannerLines[0]}</text>
@@ -467,7 +511,30 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
               <text fg="#8B5CF6">{bannerLines[4]}</text>
               <text fg="#A855F7">{bannerLines[5]}</text>
             </box>
-            <ApiKeyPrompt onSubmit={handleApiKeySubmit} onCancel={handleApiKeyCancel} />
+            <AuthPrompt
+              onSelectWebAuth={handleWebAuthSelect}
+              onSubmitApiKey={handleApiKeySubmit}
+              onCancel={handleAuthCancel}
+            />
+          </box>
+        </Match>
+
+        {/* Device auth flow */}
+        <Match when={appState() === "device_auth"}>
+          <box flexDirection="column">
+            <box paddingLeft={1} paddingRight={1} paddingTop={1} paddingBottom={1} flexDirection="column">
+              <text fg="#22D3EE">{bannerLines[0]}</text>
+              <text fg="#2DD4D0">{bannerLines[1]}</text>
+              <text fg="#38BDF8">{bannerLines[2]}</text>
+              <text fg="#6366F1">{bannerLines[3]}</text>
+              <text fg="#8B5CF6">{bannerLines[4]}</text>
+              <text fg="#A855F7">{bannerLines[5]}</text>
+            </box>
+            <DeviceAuthFlow
+              onSuccess={handleDeviceAuthSuccess}
+              onCancel={handleDeviceAuthCancel}
+              onError={handleDeviceAuthError}
+            />
           </box>
         </Match>
 
@@ -489,6 +556,10 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
             >
               <text>
                 <span style={{ fg: theme.primary, bold: true }}>10x</span>
+                <span style={{ fg: theme.textMuted }}> • </span>
+                <span style={{ fg: authMode() === "10x" ? "#22D3EE" : theme.textMuted }}>
+                  {authMode() === "10x" ? "10x" : "BYOK"}
+                </span>
                 <span style={{ fg: theme.textMuted }}> • </span>
                 <span style={{ fg: theme.primary }}>◆ {routingMode() === "auto" ? `auto (${chat.currentTier})` : chat.currentTier}</span>
               </text>
@@ -528,7 +599,13 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
                 </box>
               </Show>
 
-              <Show when={chat.error}>
+              <Show when={chat.usageLimitExceeded}>
+                <box marginTop={1} marginBottom={1} paddingLeft={2} paddingRight={2}>
+                  <text fg="#F59E0B">⚠ Usage limit exceeded. Visit 10x.dev/billing to upgrade your plan.</text>
+                </box>
+              </Show>
+
+              <Show when={chat.error && !chat.usageLimitExceeded}>
                 <box marginTop={1} marginBottom={1}>
                   <text fg={theme.error}>Error: {chat.error}</text>
                 </box>
