@@ -16,9 +16,16 @@ export interface RouterConfig {
 }
 
 const TIER_MODELS: Record<ModelTier, string> = {
-  superfast: 'groq/gpt-oss-20b-128k',
-  fast: 'groq/kimi-k2-0905-1t-256k',
-  smart: 'anthropic/claude-opus-4',
+  superfast: 'openai/gpt-oss-safeguard-20b',
+  fast: 'moonshotai/kimi-k2-0905',
+  smart: 'anthropic/claude-opus-4.5',
+};
+
+// Use Groq provider for speed on superfast and fast tiers
+const TIER_PROVIDERS: Record<ModelTier, string | undefined> = {
+  superfast: 'groq',
+  fast: 'groq',
+  smart: undefined,
 };
 
 // Vision-capable models for multimodal
@@ -119,12 +126,16 @@ export class Router {
       tier ?? (await this.classify((messages[messages.length - 1]?.content as string) ?? ''));
     const model = TIER_MODELS[selectedTier];
 
+    // Add provider routing for speed tiers
+    const provider = TIER_PROVIDERS[selectedTier];
+
     const request: ChatRequest = {
       model,
       messages: this.systemPrompt
         ? [{ role: 'system', content: this.systemPrompt }, ...messages]
         : messages,
       tools: this.tools?.toOpenRouterTools(),
+      ...(provider && { provider: { order: [provider] } }),
     };
 
     const response = await this.client.chat(request);
@@ -179,6 +190,9 @@ export class Router {
 
     let continueLoop = true;
 
+    // Add provider routing for speed tiers (not for vision model)
+    const provider = hasImages ? undefined : TIER_PROVIDERS[selectedTier];
+
     while (continueLoop) {
       continueLoop = false;
 
@@ -186,6 +200,7 @@ export class Router {
         model,
         messages: fullMessages,
         tools: this.tools?.toOpenRouterTools(),
+        ...(provider && { provider: { order: [provider] } }),
       };
 
       let currentContent = '';

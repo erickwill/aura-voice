@@ -144,7 +144,7 @@ export function supportsVision(model: string): boolean {
   const visionModels = [
     'google/gemini',
     'anthropic/claude-3',
-    'anthropic/claude-opus-4',
+    'anthropic/claude-opus-4',   // matches claude-opus-4-5 too
     'anthropic/claude-sonnet-4',
     'openai/gpt-4o',
     'openai/gpt-4-vision',

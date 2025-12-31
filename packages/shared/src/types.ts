@@ -1,11 +1,14 @@
 // Model tiers for routing
 export type ModelTier = 'superfast' | 'fast' | 'smart';
 
+// Routing modes
+export type RoutingMode = 'auto' | ModelTier;
+
 // OpenRouter model IDs
 export const MODEL_IDS = {
-  superfast: 'groq/gpt-oss-20b-128k',
-  fast: 'groq/kimi-k2-0905-1t-256k',
-  smart: 'anthropic/claude-opus-4',
+  superfast: 'openai/gpt-oss-safeguard-20b',
+  fast: 'moonshotai/kimi-k2-0905',
+  smart: 'anthropic/claude-opus-4.5',
   imageGen: 'google/gemini-3-pro-image-preview',
   imageUnderstand: 'google/gemini-3-pro',
   videoGen: 'google/veo-3.1',
@@ -108,6 +111,10 @@ export interface ChatRequest {
   tools?: OpenRouterTool[];
   temperature?: number;
   max_tokens?: number;
+  provider?: {
+    order?: string[];
+    [key: string]: unknown;
+  };
 }
 
 export interface OpenRouterTool {
