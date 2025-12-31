@@ -6,9 +6,15 @@ import {
   PermissionManager,
 } from "@10x/core"
 import type { Message, ModelTier, RoutingMode, ChatMessage, ToolCall, ContentPart } from "@10x/shared"
+import type { AuthMode } from "../config"
+
+// 10x API proxy URL
+const TEN_X_API_URL = process.env.TEN_X_API_URL || 'https://10x.dev/api/v1';
 
 interface UseChatOptions {
-  apiKey: string
+  apiKey?: string        // OpenRouter API key (BYOK mode)
+  authToken?: string     // 10x API token (10x auth mode)
+  authMode?: AuthMode    // Which auth mode is active
   defaultTier?: ModelTier
   routingMode?: RoutingMode
   systemPrompt?: string
@@ -20,6 +26,7 @@ interface UseChatReturn {
   messages: Message[]
   isStreaming: boolean
   error: string | null
+  usageLimitExceeded: boolean    // True when 10x auth mode usage limit is exceeded
   tokenUsage: { input: number; output: number }
   currentTier: ModelTier
   activeToolCalls: ToolCall[]
@@ -30,6 +37,8 @@ interface UseChatReturn {
 
 export function useChat({
   apiKey,
+  authToken,
+  authMode,
   defaultTier = "smart",
   routingMode = "auto",
   systemPrompt,
@@ -39,6 +48,7 @@ export function useChat({
   const [messages, setMessages] = createSignal<Message[]>([])
   const [isStreaming, setIsStreaming] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
+  const [usageLimitExceeded, setUsageLimitExceeded] = createSignal(false)
   const [tokenUsage, setTokenUsage] = createSignal({ input: 0, output: 0 })
   const [currentTier, setCurrentTier] = createSignal<ModelTier>(defaultTier)
   const [activeToolCalls, setActiveToolCalls] = createSignal<ToolCall[]>([])
@@ -49,7 +59,19 @@ export function useChat({
 
   const getRouter = () => {
     if (!router) {
-      const client = new OpenRouterClient({ apiKey })
+      // Configure client based on auth mode
+      let client: OpenRouterClient
+      if (authMode === '10x' && authToken) {
+        // 10x auth mode: use our API proxy
+        client = new OpenRouterClient({
+          apiKey: authToken,
+          baseURL: TEN_X_API_URL,
+        })
+      } else {
+        // BYOK mode: use OpenRouter directly
+        client = new OpenRouterClient({ apiKey: apiKey || '' })
+      }
+
       if (enableTools) {
         tools = createCoreToolRegistry()
         if (permissionManager) {
@@ -198,7 +220,18 @@ export function useChat({
 
       setActiveToolCalls([])
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred"
+      let errorMessage = err instanceof Error ? err.message : "An error occurred"
+
+      // Check for 402 usage limit exceeded error (10x auth mode)
+      if (err instanceof Error && (
+        errorMessage.includes('402') ||
+        errorMessage.includes('usage_limit_exceeded') ||
+        errorMessage.includes('Monthly token limit exceeded')
+      )) {
+        setUsageLimitExceeded(true)
+        errorMessage = 'Monthly token limit exceeded. Please upgrade your plan at 10x.dev/billing'
+      }
+
       setError(errorMessage)
 
       setMessages((prev) => {
@@ -233,6 +266,9 @@ export function useChat({
     },
     get error() {
       return error()
+    },
+    get usageLimitExceeded() {
+      return usageLimitExceeded()
     },
     get tokenUsage() {
       return tokenUsage()
