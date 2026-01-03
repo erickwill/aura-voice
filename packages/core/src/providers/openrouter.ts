@@ -92,20 +92,42 @@ export class OpenRouterClient {
   private async parseErrorResponse(response: Response): Promise<OpenRouterError> {
     let errorMessage: string;
     let retryAfterMs: number | undefined;
+    let errorBody: { error?: { message?: string; type?: string; code?: string }; type?: string; code?: string } | undefined;
 
     try {
-      const errorBody = await response.json() as { error?: { message?: string } };
-      errorMessage = errorBody.error?.message || `HTTP ${response.status}`;
+      errorBody = await response.json() as typeof errorBody;
+      errorMessage = errorBody?.error?.message || `HTTP ${response.status}`;
     } catch {
       errorMessage = await response.text().catch(() => `HTTP ${response.status}`);
     }
 
-    // Check for Retry-After header (in seconds)
-    const retryAfter = response.headers.get('Retry-After');
-    if (retryAfter) {
-      const seconds = parseInt(retryAfter, 10);
-      if (!isNaN(seconds)) {
-        retryAfterMs = seconds * 1000;
+    // Check for retry-after-ms header first (milliseconds - more precise)
+    const retryAfterMsHeader = response.headers.get('retry-after-ms');
+    if (retryAfterMsHeader) {
+      const parsedMs = parseFloat(retryAfterMsHeader);
+      if (!isNaN(parsedMs)) {
+        retryAfterMs = parsedMs;
+      }
+    }
+
+    // Then check for Retry-After header (seconds or HTTP date)
+    if (retryAfterMs === undefined) {
+      const retryAfter = response.headers.get('Retry-After');
+      if (retryAfter) {
+        // Try parsing as seconds
+        const seconds = parseFloat(retryAfter);
+        if (!isNaN(seconds)) {
+          retryAfterMs = Math.ceil(seconds * 1000);
+        } else {
+          // Try parsing as HTTP date format
+          const parsedDate = Date.parse(retryAfter);
+          if (!isNaN(parsedDate)) {
+            const delayMs = parsedDate - Date.now();
+            if (delayMs > 0) {
+              retryAfterMs = Math.ceil(delayMs);
+            }
+          }
+        }
       }
     }
 
@@ -114,7 +136,67 @@ export class OpenRouterClient {
       errorMessage = `Rate limited: ${errorMessage}`;
     }
 
-    return new OpenRouterError(errorMessage, response.status, retryAfterMs);
+    // Check for provider-specific retryable errors in error body
+    const isRetryable = this.isProviderErrorRetryable(response.status, errorBody, errorMessage);
+
+    const error = new OpenRouterError(errorMessage, response.status, retryAfterMs);
+    // Override retryable status based on provider-specific detection
+    if (isRetryable !== undefined) {
+      error.isRetryable = isRetryable;
+    }
+
+    return error;
+  }
+
+  /**
+   * Check if a provider error is retryable based on error body content
+   */
+  private isProviderErrorRetryable(
+    status: number,
+    errorBody: { error?: { message?: string; type?: string; code?: string }; type?: string; code?: string } | undefined,
+    errorMessage: string
+  ): boolean | undefined {
+    // Default retryable logic is in OpenRouterError constructor (429, 5xx)
+    // Here we check for specific provider error patterns
+
+    const message = errorMessage.toLowerCase();
+    const errorType = errorBody?.error?.type?.toLowerCase() || errorBody?.type?.toLowerCase() || '';
+    const errorCode = errorBody?.error?.code?.toLowerCase() || errorBody?.code?.toLowerCase() || '';
+
+    // Definitely retryable errors
+    if (
+      message.includes('overloaded') ||
+      message.includes('too_many_requests') ||
+      message.includes('rate_limit') ||
+      message.includes('temporarily unavailable') ||
+      message.includes('service unavailable') ||
+      errorType === 'too_many_requests' ||
+      errorType === 'server_error' ||
+      errorCode.includes('rate_limit') ||
+      errorCode.includes('exhausted') ||
+      errorCode.includes('unavailable') ||
+      message.includes('no_kv_space')
+    ) {
+      return true;
+    }
+
+    // Definitely not retryable errors
+    if (
+      status === 401 || // Unauthorized
+      status === 402 || // Payment required
+      status === 403 || // Forbidden
+      errorType === 'invalid_request_error' ||
+      errorType === 'authentication_error' ||
+      message.includes('invalid api key') ||
+      message.includes('invalid_api_key') ||
+      message.includes('insufficient_quota') ||
+      message.includes('billing')
+    ) {
+      return false;
+    }
+
+    // Return undefined to use default logic
+    return undefined;
   }
 
   /**
