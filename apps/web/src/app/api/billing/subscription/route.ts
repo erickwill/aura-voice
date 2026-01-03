@@ -5,6 +5,9 @@ import { db, subscriptions } from '@/lib/db';
 import { getPlanById, getFreePlan } from '@/lib/billing/plans';
 import { getUsageSummary } from '@/lib/billing/usage';
 
+// Force dynamic rendering - this route uses cookies for auth
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/billing/subscription
  * Get current user's subscription and usage status
