@@ -220,7 +220,6 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     user: {
       id: user.id,
-      email: user.email,
     },
     usage: {
       tokensUsed: usageLimit.used,
