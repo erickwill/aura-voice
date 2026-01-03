@@ -31,6 +31,9 @@ const TIER_PROVIDERS: Record<ModelTier, string | undefined> = {
 // Vision-capable models for multimodal
 const VISION_MODEL = 'google/gemini-2.0-flash-001';
 
+// Doom loop detection: if the same tool is called N times with identical args, stop
+const DOOM_LOOP_THRESHOLD = 3;
+
 // Simple heuristics for task classification
 const SIMPLE_PATTERNS = [
   /^(what|how|why|when|where|who|which|explain|describe)/i,
@@ -56,12 +59,22 @@ export interface TokenUsage {
 }
 
 export interface StreamEvent {
-  type: 'text' | 'tool_call' | 'tool_result' | 'done' | 'usage';
+  type: 'text' | 'tool_call' | 'tool_result' | 'done' | 'usage' | 'doom_loop';
   content?: string;
   toolCall?: ToolCall;
   toolResult?: ToolResult;
   tier?: ModelTier;
   usage?: TokenUsage;
+  doomLoop?: {
+    tool: string;
+    input: Record<string, unknown>;
+    count: number;
+  };
+}
+
+// Helper to create a fingerprint for tool call comparison
+function getToolCallFingerprint(name: string, input: Record<string, unknown>): string {
+  return `${name}:${JSON.stringify(input)}`;
 }
 
 export class Router {
@@ -194,6 +207,9 @@ export class Router {
     // Add provider routing for speed tiers (not for vision model)
     const provider = hasImages ? undefined : TIER_PROVIDERS[selectedTier];
 
+    // Track recent tool calls for doom loop detection
+    const recentToolCalls: string[] = [];
+
     while (continueLoop) {
       // Check for abort at the start of each loop iteration
       if (signal?.aborted) {
@@ -259,6 +275,59 @@ export class Router {
               input: JSON.parse(tc.args || '{}'),
               status: 'running',
             };
+
+            // Check for doom loop before executing
+            const fingerprint = getToolCallFingerprint(tc.name, toolCall.input);
+            recentToolCalls.push(fingerprint);
+
+            // Check if the last N calls are identical
+            if (recentToolCalls.length >= DOOM_LOOP_THRESHOLD) {
+              const lastN = recentToolCalls.slice(-DOOM_LOOP_THRESHOLD);
+              const allIdentical = lastN.every(fp => fp === fingerprint);
+
+              if (allIdentical) {
+                // Doom loop detected!
+                yield {
+                  type: 'doom_loop',
+                  tier: selectedTier,
+                  doomLoop: {
+                    tool: tc.name,
+                    input: toolCall.input,
+                    count: DOOM_LOOP_THRESHOLD,
+                  },
+                };
+
+                // Return error result for this tool call
+                toolCall.status = 'error';
+                toolCall.output = {
+                  success: false,
+                  error: `Doom loop detected: "${tc.name}" called ${DOOM_LOOP_THRESHOLD} times with identical arguments. Breaking loop to prevent infinite execution.`,
+                };
+
+                yield { type: 'tool_result', toolCall, toolResult: toolCall.output, tier: selectedTier };
+
+                // Add error to messages so model knows what happened
+                fullMessages.push({
+                  role: 'assistant',
+                  content: currentContent || null,
+                  tool_calls: [
+                    {
+                      id: tc.id,
+                      type: 'function',
+                      function: { name: tc.name, arguments: tc.args },
+                    },
+                  ],
+                } as any);
+
+                fullMessages.push({
+                  role: 'tool',
+                  tool_call_id: tc.id,
+                  content: toolCall.output.error,
+                } as any);
+
+                continue; // Skip actual execution
+              }
+            }
 
             yield { type: 'tool_call', toolCall, tier: selectedTier };
 
