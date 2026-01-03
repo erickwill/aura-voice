@@ -209,6 +209,22 @@ export function useChat({
           }
         }
 
+        // Handle doom loop detection - append warning to content
+        if (event.type === "doom_loop" && event.doomLoop) {
+          const warning = `\n\n⚠️ Doom loop detected: "${event.doomLoop.tool}" called ${event.doomLoop.count} times with identical arguments. Breaking loop.`
+          fullContent += warning
+
+          setMessages((prev) => {
+            const updated = [...prev]
+            const lastIndex = updated.length - 1
+            updated[lastIndex] = {
+              ...updated[lastIndex],
+              content: fullContent,
+            }
+            return updated
+          })
+        }
+
         if (event.type === "done") {
           break
         }
