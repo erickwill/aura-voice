@@ -64,8 +64,17 @@ export class ToolRegistry {
    */
   async execute(
     name: string,
-    params: Record<string, unknown>
+    params: Record<string, unknown>,
+    signal?: AbortSignal
   ): Promise<ToolResult> {
+    // Check for abort before starting
+    if (signal?.aborted) {
+      return {
+        success: false,
+        error: 'Tool execution aborted',
+      };
+    }
+
     const tool = this.tools.get(name);
     if (!tool) {
       return {
@@ -89,8 +98,16 @@ export class ToolRegistry {
     }
 
     try {
-      return await tool.execute(params);
+      // Pass signal to tool if it supports it
+      return await tool.execute(params, signal);
     } catch (error) {
+      // Handle abort errors gracefully
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'Tool execution aborted',
+        };
+      }
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Tool execution failed',

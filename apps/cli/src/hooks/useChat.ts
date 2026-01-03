@@ -33,6 +33,7 @@ interface UseChatReturn {
   sendMessage: (content: string | ContentPart[], tier?: ModelTier) => Promise<void>
   clearMessages: () => void
   clearError: () => void
+  cancel: () => void  // Cancel the current streaming operation
 }
 
 export function useChat({
@@ -56,6 +57,9 @@ export function useChat({
   // Keep router instance stable
   let router: Router | null = null
   let tools: ReturnType<typeof createCoreToolRegistry> | null = null
+
+  // Abort controller for cancellation
+  let abortController: AbortController | null = null
 
   const getRouter = () => {
     if (!router) {
@@ -120,6 +124,10 @@ export function useChat({
     setError(null)
     setActiveToolCalls([])
 
+    // Create new abort controller for this request
+    abortController = new AbortController()
+    const signal = abortController.signal
+
     try {
       const routerInstance = getRouter()
 
@@ -149,7 +157,7 @@ export function useChat({
       let responseTier: ModelTier = tier ?? defaultTier
       const collectedToolCalls: ToolCall[] = []
 
-      for await (const event of routerInstance.stream(chatMessages, tier, hasImages)) {
+      for await (const event of routerInstance.stream(chatMessages, tier, hasImages, signal)) {
         responseTier = event.tier ?? responseTier
         setCurrentTier(responseTier)
 
@@ -220,6 +228,28 @@ export function useChat({
 
       setActiveToolCalls([])
     } catch (err) {
+      // Handle abort/cancellation - not an error, just cleanup
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        // Keep partial content if any, just mark the message as incomplete
+        setMessages((prev) => {
+          const updated = [...prev]
+          const lastIndex = updated.length - 1
+          if (updated[lastIndex]?.role === "assistant") {
+            // Keep the message with whatever content we have
+            if (!updated[lastIndex].content) {
+              // If no content yet, add a cancelled indicator
+              updated[lastIndex] = {
+                ...updated[lastIndex],
+                content: "(cancelled)",
+              }
+            }
+          }
+          return updated
+        })
+        // Don't set error for cancellation
+        return
+      }
+
       let errorMessage = err instanceof Error ? err.message : "An error occurred"
 
       // Check for 402 usage limit exceeded error (10x auth mode)
@@ -243,6 +273,13 @@ export function useChat({
     } finally {
       setIsStreaming(false)
       setActiveToolCalls([])
+      abortController = null
+    }
+  }
+
+  const cancel = () => {
+    if (abortController) {
+      abortController.abort()
     }
   }
 
@@ -282,5 +319,6 @@ export function useChat({
     sendMessage,
     clearMessages,
     clearError,
+    cancel,
   }
 }

@@ -18,7 +18,7 @@ export const PLANS: Plan[] = [
   {
     id: 'free',
     name: 'Free',
-    description: 'Get started for free',
+    description: 'Try 10x for free',
     monthlyTokens: 100_000,    // 100k tokens
     priceMonthly: 0,
     priceYearly: 0,
@@ -26,56 +26,56 @@ export const PLANS: Plan[] = [
     stripePriceIdYearly: null,
     features: [
       '100k tokens/month',
-      'All model tiers',
+      'All models',
       'Community support',
-    ],
-  },
-  {
-    id: 'starter',
-    name: 'Starter',
-    description: 'For individual developers',
-    monthlyTokens: 1_000_000,  // 1M tokens
-    priceMonthly: 1500,        // $15/month
-    priceYearly: 14400,        // $144/year ($12/month)
-    stripePriceIdMonthly: process.env.STRIPE_PRICE_STARTER_MONTHLY || 'price_starter_monthly',
-    stripePriceIdYearly: process.env.STRIPE_PRICE_STARTER_YEARLY || 'price_starter_yearly',
-    features: [
-      '1M tokens/month',
-      'All model tiers',
-      'Priority support',
     ],
   },
   {
     id: 'pro',
     name: 'Pro',
-    description: 'For power users',
-    monthlyTokens: 5_000_000,  // 5M tokens
-    priceMonthly: 4900,        // $49/month
-    priceYearly: 47000,        // $470/year (~$39/month)
-    stripePriceIdMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY || 'price_pro_monthly',
-    stripePriceIdYearly: process.env.STRIPE_PRICE_PRO_YEARLY || 'price_pro_yearly',
+    description: 'For individual developers',
+    monthlyTokens: 2_000_000,  // 2M tokens
+    priceMonthly: 2000,        // $20/month
+    priceYearly: 19200,        // $192/year ($16/month)
+    stripePriceIdMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY || '',
+    stripePriceIdYearly: process.env.STRIPE_PRICE_PRO_YEARLY || '',
     features: [
-      '5M tokens/month',
-      'All model tiers',
+      '2M tokens/month',
+      'All models',
+      'Priority support',
+    ],
+  },
+  {
+    id: 'max',
+    name: 'Max',
+    description: 'For power users',
+    monthlyTokens: 10_000_000,  // 10M tokens
+    priceMonthly: 10000,        // $100/month
+    priceYearly: 96000,         // $960/year ($80/month)
+    stripePriceIdMonthly: process.env.STRIPE_PRICE_MAX_MONTHLY || '',
+    stripePriceIdYearly: process.env.STRIPE_PRICE_MAX_YEARLY || '',
+    features: [
+      '10M tokens/month',
+      'All models',
       'Priority support',
       'Early access to features',
     ],
   },
   {
-    id: 'team',
-    name: 'Team',
-    description: 'For teams and organizations',
-    monthlyTokens: 20_000_000,  // 20M tokens
-    priceMonthly: 14900,        // $149/month
-    priceYearly: 143000,        // $1430/year (~$119/month)
-    stripePriceIdMonthly: process.env.STRIPE_PRICE_TEAM_MONTHLY || 'price_team_monthly',
-    stripePriceIdYearly: process.env.STRIPE_PRICE_TEAM_YEARLY || 'price_team_yearly',
+    id: 'ultra',
+    name: 'Ultra',
+    description: 'For heavy usage',
+    monthlyTokens: 25_000_000,  // 25M tokens
+    priceMonthly: 20000,        // $200/month
+    priceYearly: 192000,        // $1920/year ($160/month)
+    stripePriceIdMonthly: process.env.STRIPE_PRICE_ULTRA_MONTHLY || '',
+    stripePriceIdYearly: process.env.STRIPE_PRICE_ULTRA_YEARLY || '',
     features: [
-      '20M tokens/month',
-      'All model tiers',
+      '25M tokens/month',
+      'All models',
       'Priority support',
       'Early access to features',
-      'Team management',
+      'Dedicated support channel',
     ],
   },
 ];

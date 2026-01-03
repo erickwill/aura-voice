@@ -174,7 +174,8 @@ export class Router {
   async *stream(
     messages: ChatMessage[],
     tier?: ModelTier,
-    hasImages?: boolean
+    hasImages?: boolean,
+    signal?: AbortSignal
   ): AsyncGenerator<StreamEvent, void, unknown> {
     const lastContent = messages[messages.length - 1]?.content;
     const contentForClassify = typeof lastContent === 'string' ? lastContent : '';
@@ -194,6 +195,11 @@ export class Router {
     const provider = hasImages ? undefined : TIER_PROVIDERS[selectedTier];
 
     while (continueLoop) {
+      // Check for abort at the start of each loop iteration
+      if (signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+      }
+
       continueLoop = false;
 
       const request: ChatRequest = {
@@ -207,7 +213,7 @@ export class Router {
       const toolCalls: Map<number, { id: string; name: string; args: string }> =
         new Map();
 
-      for await (const chunk of this.client.chatStream(request)) {
+      for await (const chunk of this.client.chatStream(request, signal)) {
         const delta = chunk.choices[0]?.delta;
 
         // Handle text content
@@ -242,6 +248,11 @@ export class Router {
         if (chunk.choices[0]?.finish_reason === 'tool_calls') {
           // Execute tool calls
           for (const [, tc] of toolCalls) {
+            // Check for abort before each tool execution
+            if (signal?.aborted) {
+              throw new DOMException('Aborted', 'AbortError');
+            }
+
             const toolCall: ToolCall = {
               id: tc.id,
               name: tc.name,
@@ -253,7 +264,7 @@ export class Router {
 
             // Execute the tool
             if (this.tools) {
-              const result = await this.tools.execute(tc.name, toolCall.input);
+              const result = await this.tools.execute(tc.name, toolCall.input, signal);
               toolCall.output = result;
               toolCall.status = result.success ? 'success' : 'error';
 
