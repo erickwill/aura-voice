@@ -28,11 +28,19 @@ export const bashTool: Tool = {
     required: ['command'],
   },
 
-  async execute(params: Record<string, unknown>): Promise<ToolResult> {
+  async execute(params: Record<string, unknown>, signal?: AbortSignal): Promise<ToolResult> {
     const { command, timeout = DEFAULT_TIMEOUT } = params as unknown as BashParams;
 
+    // Check if already aborted
+    if (signal?.aborted) {
+      return {
+        success: false,
+        error: 'Command execution aborted',
+      };
+    }
+
     try {
-      const result = await runBash(command, timeout);
+      const result = await runBash(command, timeout, signal);
 
       // Combine stdout and stderr
       let output = '';
@@ -63,6 +71,14 @@ export const bashTool: Tool = {
         output: output || '(no output)',
       };
     } catch (error) {
+      // Handle abort error
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return {
+          success: false,
+          error: 'Command execution aborted',
+        };
+      }
+
       if (error instanceof Error && error.message === 'TIMEOUT') {
         return {
           success: false,
@@ -83,9 +99,16 @@ export const bashTool: Tool = {
  */
 function runBash(
   command: string,
-  timeout: number
+  timeout: number,
+  signal?: AbortSignal
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve, reject) => {
+    // Check if already aborted
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+
     const proc = spawn('bash', ['-c', command], {
       cwd: process.cwd(),
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -108,6 +131,17 @@ function runBash(
       reject(new Error('TIMEOUT'));
     }, timeout);
 
+    // Handle abort signal
+    const abortHandler = () => {
+      if (!killed) {
+        killed = true;
+        clearTimeout(timer);
+        proc.kill('SIGTERM');
+        reject(new DOMException('Aborted', 'AbortError'));
+      }
+    };
+    signal?.addEventListener('abort', abortHandler, { once: true });
+
     proc.stdout.on('data', (data) => {
       stdout += data.toString();
     });
@@ -118,6 +152,7 @@ function runBash(
 
     proc.on('close', (exitCode) => {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', abortHandler);
       if (!killed) {
         resolve({ stdout, stderr, exitCode: exitCode ?? 0 });
       }
@@ -125,6 +160,7 @@ function runBash(
 
     proc.on('error', (err) => {
       clearTimeout(timer);
+      signal?.removeEventListener('abort', abortHandler);
       reject(err);
     });
   });

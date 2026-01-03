@@ -152,11 +152,21 @@ export function App(props: AppProps) {
     if (appState() !== "ready") return
 
     if (evt.ctrl && evt.name === "c") {
+      // If streaming, cancel the operation
+      if (chat.isStreaming) {
+        chat.cancel()
+        return
+      }
       if (inputValue()) {
         setInputValue("")
       } else {
         exit()
       }
+    }
+    // Escape also cancels streaming
+    if (evt.name === "escape" && chat.isStreaming) {
+      chat.cancel()
+      return
     }
     if (evt.ctrl && evt.name === "d") {
       exit()
@@ -608,6 +618,12 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
               <Show when={chat.error && !chat.usageLimitExceeded}>
                 <box marginTop={1} marginBottom={1}>
                   <text fg={theme.error}>Error: {chat.error}</text>
+                </box>
+              </Show>
+
+              <Show when={chat.isStreaming}>
+                <box marginTop={0} marginBottom={1} paddingLeft={2}>
+                  <text fg={theme.textMuted}>Press Ctrl+C or Esc to cancel</text>
                 </box>
               </Show>
 

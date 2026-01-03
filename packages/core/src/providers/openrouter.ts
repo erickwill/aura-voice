@@ -32,10 +32,22 @@ export class OpenRouterError extends Error {
 }
 
 /**
- * Sleep for a given number of milliseconds
+ * Sleep for a given number of milliseconds, respecting abort signal
  */
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+
+    const timeout = setTimeout(resolve, ms);
+
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timeout);
+      reject(new DOMException('Aborted', 'AbortError'));
+    }, { once: true });
+  });
 }
 
 /**
@@ -111,10 +123,16 @@ export class OpenRouterClient {
   private async fetchWithRetry(
     url: string,
     options: RequestInit,
+    signal?: AbortSignal,
     attempt: number = 0
   ): Promise<Response> {
+    // Check if already aborted
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
+
     try {
-      const response = await fetch(url, options);
+      const response = await fetch(url, { ...options, signal });
 
       if (!response.ok) {
         const error = await this.parseErrorResponse(response);
@@ -122,8 +140,8 @@ export class OpenRouterClient {
         // If retryable and we have attempts left
         if (error.isRetryable && attempt < this.maxRetries) {
           const delayMs = error.retryAfterMs ?? getBackoffDelay(attempt, this.retryDelayMs);
-          await sleep(delayMs);
-          return this.fetchWithRetry(url, options, attempt + 1);
+          await sleep(delayMs, signal);
+          return this.fetchWithRetry(url, options, signal, attempt + 1);
         }
 
         throw error;
@@ -131,11 +149,16 @@ export class OpenRouterClient {
 
       return response;
     } catch (error) {
+      // Re-throw abort errors immediately
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw error;
+      }
+
       // Network errors are retryable
       if (error instanceof TypeError && attempt < this.maxRetries) {
         const delayMs = getBackoffDelay(attempt, this.retryDelayMs);
-        await sleep(delayMs);
-        return this.fetchWithRetry(url, options, attempt + 1);
+        await sleep(delayMs, signal);
+        return this.fetchWithRetry(url, options, signal, attempt + 1);
       }
 
       // Re-throw OpenRouterError as-is
@@ -154,7 +177,7 @@ export class OpenRouterClient {
   /**
    * Send a chat completion request (non-streaming)
    */
-  async chat(request: ChatRequest): Promise<ChatResponse> {
+  async chat(request: ChatRequest, signal?: AbortSignal): Promise<ChatResponse> {
     const response = await this.fetchWithRetry(
       `${this.baseURL}/chat/completions`,
       {
@@ -164,7 +187,8 @@ export class OpenRouterClient {
           ...request,
           stream: false,
         }),
-      }
+      },
+      signal
     );
 
     return response.json() as Promise<ChatResponse>;
@@ -174,8 +198,14 @@ export class OpenRouterClient {
    * Send a chat completion request with streaming
    */
   async *chatStream(
-    request: ChatRequest
+    request: ChatRequest,
+    signal?: AbortSignal
   ): AsyncGenerator<StreamChunk, void, unknown> {
+    // Check if already aborted
+    if (signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
+
     // For streaming, we only retry on initial connection failure
     const response = await this.fetchWithRetry(
       `${this.baseURL}/chat/completions`,
@@ -186,7 +216,8 @@ export class OpenRouterClient {
           ...request,
           stream: true,
         }),
-      }
+      },
+      signal
     );
 
     const reader = response.body?.getReader();
@@ -199,6 +230,11 @@ export class OpenRouterClient {
 
     try {
       while (true) {
+        // Check for abort before each read
+        if (signal?.aborted) {
+          throw new DOMException('Aborted', 'AbortError');
+        }
+
         const { done, value } = await reader.read();
         if (done) break;
 
