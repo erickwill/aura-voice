@@ -16,9 +16,54 @@ export {
   globTool,
   grepTool,
   bashTool,
+  todoWriteTool,
+  getTodos,
+  clearTodos,
+  askUserQuestionTool,
+  setAskQuestionPromptFn,
+  clearAskQuestionPromptFn,
+  enterPlanModeTool,
+  exitPlanModeTool,
+  setEnterPlanModeCallback,
+  clearEnterPlanModeCallback,
+  setExitPlanModeCallback,
+  clearExitPlanModeCallback,
+  getPlanModeState,
+  isPlanModeActive,
+  resetPlanModeState,
+  taskTool,
+  setTaskRouterConfig,
+  clearTaskRouterConfig,
+  setConversationContext,
+  clearConversationContext,
   CORE_TOOLS,
 } from './tools/index.js';
-export type { CoreToolName } from './tools/index.js';
+export type {
+  CoreToolName,
+  TodoItem,
+  Question,
+  QuestionOption,
+  AskQuestionPromptFn,
+  PlanModeState,
+  EnterPlanModeCallback,
+  ExitPlanModeCallback,
+} from './tools/index.js';
+
+// Agents
+export {
+  executeAgent,
+  getAgentConfig,
+  listAgentTypes,
+  getAgentState,
+  clearAgentStates,
+} from './agents/index.js';
+export type {
+  AgentType,
+  AgentConfig,
+  AgentParams,
+  AgentResult,
+  AgentState,
+} from './agents/index.js';
 
 // Sessions
 export { SessionManager } from './sessions/index.js';
@@ -107,6 +152,38 @@ export type {
   SuperpowerResult,
   SuperpowerEvent,
 } from './superpowers/index.js';
+
+// Prompts - System
+export {
+  SYSTEM_PROMPT,
+  SECURITY_PROMPT,
+} from './prompts/index.js';
+
+// Prompts - Tools
+export {
+  BASH_DESCRIPTION,
+  READ_DESCRIPTION,
+  EDIT_DESCRIPTION,
+  WRITE_DESCRIPTION,
+  GLOB_DESCRIPTION,
+  GREP_DESCRIPTION,
+  TASK_DESCRIPTION,
+  TODOWRITE_DESCRIPTION,
+  ASKUSERQUESTION_DESCRIPTION,
+  WEBFETCH_DESCRIPTION,
+  WEBSEARCH_DESCRIPTION,
+  LSP_DESCRIPTION,
+  ENTERPLANMODE_DESCRIPTION,
+  EXITPLANMODE_DESCRIPTION,
+} from './prompts/index.js';
+
+// Prompts - Agents
+export {
+  EXPLORE_AGENT_PROMPT,
+  SUMMARIZATION_AGENT_PROMPT,
+  REVIEW_PR_AGENT_PROMPT,
+  TITLE_GEN_AGENT_PROMPT,
+} from './prompts/index.js';
 
 // Re-export shared types for convenience
 export * from '@10x/shared';
