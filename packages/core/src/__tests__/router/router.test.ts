@@ -2,6 +2,13 @@ import { describe, expect, test, beforeEach, mock } from 'bun:test';
 import { Router, type RouterConfig, type StreamEvent } from '../../router/router.js';
 import { ToolRegistry } from '../../tools/registry.js';
 import type { OpenRouterClient } from '../../providers/openrouter.js';
+import type { AIProviderConfig } from '../../providers/ai-provider.js';
+
+// Mock AI provider config for tests
+const mockAIProviderConfig: AIProviderConfig = {
+  apiKey: 'test-api-key',
+  baseURL: 'https://openrouter.ai/api/v1',
+};
 
 // Mock OpenRouter client for non-streaming tests
 function createMockClient(): OpenRouterClient {
@@ -51,19 +58,21 @@ describe('Router', () => {
     mockClient = createMockClient();
     router = new Router({
       client: mockClient,
+      aiProviderConfig: mockAIProviderConfig,
       defaultTier: 'smart',
     });
   });
 
   describe('constructor', () => {
     test('sets default values', () => {
-      const r = new Router({ client: mockClient });
+      const r = new Router({ client: mockClient, aiProviderConfig: mockAIProviderConfig });
       expect(r).toBeDefined();
     });
 
     test('accepts custom config', () => {
       const r = new Router({
         client: mockClient,
+        aiProviderConfig: mockAIProviderConfig,
         defaultTier: 'fast',
         systemPrompt: 'Test prompt',
       });
@@ -100,6 +109,7 @@ describe('Router', () => {
     test('respects custom defaultTier', async () => {
       const customRouter = new Router({
         client: mockClient,
+        aiProviderConfig: mockAIProviderConfig,
         defaultTier: 'fast',
       });
 
@@ -140,6 +150,7 @@ describe('Router', () => {
     test('adds system prompt to messages', async () => {
       const systemRouter = new Router({
         client: mockClient,
+        aiProviderConfig: mockAIProviderConfig,
         systemPrompt: 'You are a helpful assistant',
       });
 
@@ -184,6 +195,7 @@ describe('Router', () => {
 
       const routerWithTools = new Router({
         client: mockClient,
+        aiProviderConfig: mockAIProviderConfig,
         tools,
       });
 

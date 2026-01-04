@@ -10,10 +10,13 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          primary: '#0EA5E9', // Electric Blue
+          primary: '#0EA5E9',
           secondary: '#38BDF8',
           dark: '#0284C7',
         },
+      },
+      fontFamily: {
+        serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
       },
     },
   },

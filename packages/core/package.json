@@ -18,7 +18,9 @@
   },
   "dependencies": {
     "@10x/shared": "workspace:*",
+    "@openrouter/ai-sdk-provider": "^1.5.4",
     "@vscode/ripgrep": "^1.17.0",
+    "ai": "^6.0.6",
     "glob": "^11.0.0",
     "gray-matter": "^4.0.3",
     "minimatch": "^10.0.1"

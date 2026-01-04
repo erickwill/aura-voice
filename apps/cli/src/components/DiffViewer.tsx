@@ -40,7 +40,7 @@ export function DiffViewer(props: DiffViewerProps) {
     <box flexDirection="column" marginTop={1} marginBottom={1}>
       <Show when={props.title}>
         <box paddingLeft={1} marginBottom={1}>
-          <text fg={theme.textMuted}>{props.title}</text>
+          <text fg={theme.textMuted}>{String(props.title || "")}</text>
         </box>
       </Show>
       <box paddingLeft={1}>

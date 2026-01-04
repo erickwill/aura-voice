@@ -47,7 +47,7 @@ export function AssistantMessage(props: AssistantMessageProps) {
       {/* Message content */}
       <Show when={props.message.content}>
         <box paddingLeft={2}>
-          <Markdown>{props.message.content}</Markdown>
+          <Markdown>{String(props.message.content || "")}</Markdown>
         </box>
       </Show>
     </box>

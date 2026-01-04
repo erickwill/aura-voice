@@ -1,6 +1,22 @@
-import { createSignal, Show } from "solid-js"
+import { createSignal, Show, onMount, onCleanup } from "solid-js"
 import { useKeyboard } from "@opentui/solid"
+import clipboardy from "clipboardy"
 import { useTheme } from "../context"
+
+async function getClipboard(): Promise<string> {
+  if (process.platform === "darwin") {
+    try {
+      const proc = Bun.spawn(["pbpaste"], { stdout: "pipe" })
+      const text = await new Response(proc.stdout).text()
+      return text
+    } catch {}
+  }
+  try {
+    return await clipboardy.read()
+  } catch {
+    return ""
+  }
+}
 
 interface AuthPromptProps {
   onSelectWebAuth: () => void
@@ -160,9 +176,44 @@ function ManualEntry(props: { onSubmit: (key: string) => void; onBack: () => voi
   const { theme } = useTheme()
 
   const [apiKey, setApiKey] = createSignal("")
-  const [showKey, setShowKey] = createSignal(false)
+  const [cursorPos, setCursorPos] = createSignal(0)
   const [error, setError] = createSignal<string | null>(null)
   const [validating, setValidating] = createSignal(false)
+
+  // Helper to insert text at cursor position
+  const insertAtCursor = (text: string) => {
+    const pos = cursorPos()
+    setApiKey((prev) => prev.slice(0, pos) + text + prev.slice(pos))
+    setCursorPos(pos + text.length)
+    setError(null)
+  }
+
+  // Helper to delete character before cursor
+  const deleteAtCursor = () => {
+    const pos = cursorPos()
+    if (pos > 0) {
+      setApiKey((prev) => prev.slice(0, pos - 1) + prev.slice(pos))
+      setCursorPos(pos - 1)
+      setError(null)
+    }
+  }
+
+  // Register global paste handler (same mechanism as InputArea)
+  const handlePaste = (text: string) => {
+    if (validating()) return
+    const cleanText = text.trim().replace(/\n/g, "")
+    if (cleanText) {
+      insertAtCursor(cleanText)
+    }
+  }
+
+  onMount(() => {
+    ;(globalThis as any).__10xPasteHandler = handlePaste
+  })
+
+  onCleanup(() => {
+    ;(globalThis as any).__10xPasteHandler = null
+  })
 
   const handleSubmit = async () => {
     const key = apiKey().trim()
@@ -188,7 +239,7 @@ function ManualEntry(props: { onSubmit: (key: string) => void; onBack: () => voi
     }, 300)
   }
 
-  useKeyboard((evt) => {
+  useKeyboard(async (evt) => {
     if (validating()) return
 
     const key = evt.name || ""
@@ -206,23 +257,52 @@ function ManualEntry(props: { onSubmit: (key: string) => void; onBack: () => voi
     }
 
     if (key === "backspace" || key === "delete") {
-      setApiKey((prev) => prev.slice(0, -1))
-      setError(null)
+      deleteAtCursor()
       return
     }
 
-    if (isCtrl && key === "v") {
-      setShowKey((prev) => !prev)
+    // Handle left/right arrow keys
+    if (key === "left") {
+      setCursorPos((prev) => Math.max(0, prev - 1))
+      return
+    }
+
+    if (key === "right") {
+      setCursorPos((prev) => Math.min(apiKey().length, prev + 1))
+      return
+    }
+
+    // Home/End or Ctrl+A/E
+    if (key === "home" || (isCtrl && key === "a")) {
+      setCursorPos(0)
+      return
+    }
+
+    if (key === "end" || (isCtrl && key === "e")) {
+      setCursorPos(apiKey().length)
+      return
+    }
+
+    // Handle paste (Cmd+V / Ctrl+V)
+    if ((isCtrl || isMeta) && key.toLowerCase() === "v") {
+      const clipboardText = await getClipboard()
+      if (clipboardText) {
+        const cleanText = clipboardText.trim().replace(/\n/g, "")
+        insertAtCursor(cleanText)
+      }
+      return
+    }
+
+    // Handle space key
+    if (key === "space") {
+      insertAtCursor(" ")
       return
     }
 
     if (key && key.length === 1 && !isCtrl && !isMeta) {
-      setApiKey((prev) => prev + key)
-      setError(null)
+      insertAtCursor(key)
     }
   })
-
-  const maskedKey = () => (showKey() ? apiKey() : apiKey().replace(/./g, "*"))
 
   return (
     <box flexDirection="column">
@@ -242,11 +322,13 @@ function ManualEntry(props: { onSubmit: (key: string) => void; onBack: () => voi
       <box marginBottom={1} marginTop={1}>
         <text>
           <span style={{ fg: theme.text }}>API Key: </span>
-          <Show when={apiKey()} fallback={<span style={{ fg: theme.textMuted }}>sk-or-...</span>}>
-            <span style={{ fg: theme.text }}>{maskedKey()}</span>
-          </Show>
+          <span style={{ fg: theme.text }}>{apiKey().slice(0, cursorPos())}</span>
           <Show when={!validating()}>
             <span style={{ fg: theme.primary }}>|</span>
+          </Show>
+          <span style={{ fg: theme.text }}>{apiKey().slice(cursorPos())}</span>
+          <Show when={!apiKey() && !validating()}>
+            <span style={{ fg: theme.textMuted }}>sk-or-...</span>
           </Show>
         </text>
       </box>
@@ -269,7 +351,7 @@ function ManualEntry(props: { onSubmit: (key: string) => void; onBack: () => voi
 
       <box marginTop={1}>
         <text>
-          <span style={{ fg: theme.textMuted }}>Enter Submit | Esc Back | Ctrl+V Toggle visibility</span>
+          <span style={{ fg: theme.textMuted }}>Enter Submit | Esc Back</span>
         </text>
       </box>
 

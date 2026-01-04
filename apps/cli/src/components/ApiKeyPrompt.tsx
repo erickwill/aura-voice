@@ -212,7 +212,6 @@ function ManualEntry(props: { onSubmit: (key: string) => void; onBack: () => voi
   const { theme } = useTheme()
 
   const [apiKey, setApiKey] = createSignal("")
-  const [showKey, setShowKey] = createSignal(false)
   const [error, setError] = createSignal<string | null>(null)
   const [validating, setValidating] = createSignal(false)
 
@@ -263,18 +262,11 @@ function ManualEntry(props: { onSubmit: (key: string) => void; onBack: () => voi
       return
     }
 
-    if (isCtrl && key === "v") {
-      setShowKey((prev) => !prev)
-      return
-    }
-
     if (key && key.length === 1 && !isCtrl && !isMeta) {
       setApiKey((prev) => prev + key)
       setError(null)
     }
   })
-
-  const maskedKey = () => (showKey() ? apiKey() : apiKey().replace(/./g, "•"))
 
   return (
     <box flexDirection="column">
@@ -295,7 +287,7 @@ function ManualEntry(props: { onSubmit: (key: string) => void; onBack: () => voi
         <text>
           <span style={{ fg: theme.text }}>API Key: </span>
           <Show when={apiKey()} fallback={<span style={{ fg: theme.textMuted }}>sk-or-...</span>}>
-            <span style={{ fg: theme.text }}>{maskedKey()}</span>
+            <span style={{ fg: theme.text }}>{apiKey()}</span>
           </Show>
           <Show when={!validating()}>
             <span style={{ fg: theme.primary }}>█</span>
@@ -321,7 +313,7 @@ function ManualEntry(props: { onSubmit: (key: string) => void; onBack: () => voi
 
       <box marginTop={1}>
         <text>
-          <span style={{ fg: theme.textMuted }}>Enter Submit • Esc Back • Ctrl+V Toggle visibility</span>
+          <span style={{ fg: theme.textMuted }}>Enter Submit • Esc Back</span>
         </text>
       </box>
 

@@ -1,6 +1,6 @@
 // Providers
-export { OpenRouterClient, OpenRouterError } from './providers/index.js';
-export type { OpenRouterClientConfig } from './providers/index.js';
+export { OpenRouterClient, OpenRouterError, getOpenRouterProvider, getLanguageModel, clearProviderCache } from './providers/index.js';
+export type { OpenRouterClientConfig, AIProviderConfig } from './providers/index.js';
 
 // Router
 export { Router } from './router/index.js';

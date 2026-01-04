@@ -160,8 +160,8 @@ export class OpenRouterClient {
     // Here we check for specific provider error patterns
 
     const message = errorMessage.toLowerCase();
-    const errorType = errorBody?.error?.type?.toLowerCase() || errorBody?.type?.toLowerCase() || '';
-    const errorCode = errorBody?.error?.code?.toLowerCase() || errorBody?.code?.toLowerCase() || '';
+    const errorType = String(errorBody?.error?.type || errorBody?.type || '').toLowerCase();
+    const errorCode = String(errorBody?.error?.code || errorBody?.code || '').toLowerCase();
 
     // Definitely retryable errors
     if (

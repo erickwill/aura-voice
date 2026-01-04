@@ -74,19 +74,19 @@ export function PermissionPrompt(props: PermissionPromptProps) {
       </box>
 
       <box marginTop={1}>
-        <text fg={getToolColor(props.tool, theme)}>{getToolIcon(props.tool)} </text>
+        <text fg={getToolColor(props.tool, theme)}>{String(getToolIcon(props.tool) || "")} </text>
         <text bold fg={theme.text}>
-          {props.tool}
+          {String(props.tool || "")}
         </text>
       </box>
 
       <box marginTop={1} flexDirection="column">
-        <text fg={theme.textMuted}>{displayInput()}</text>
+        <text fg={theme.textMuted}>{String(displayInput() || "")}</text>
       </box>
 
       <Show when={props.context}>
         <box marginTop={1}>
-          <text fg={theme.textMuted}>{props.context}</text>
+          <text fg={theme.textMuted}>{String(props.context || "")}</text>
         </box>
       </Show>
 

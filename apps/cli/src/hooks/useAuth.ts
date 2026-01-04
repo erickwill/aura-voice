@@ -7,6 +7,7 @@ import {
   getAuthMode,
   isAuthenticated as configIsAuthenticated,
   clearAuth,
+  getApiUrl,
   type AuthMode,
 } from "../config"
 import { validateToken } from "../auth"
@@ -96,7 +97,7 @@ export function useAuth(apiUrl?: string): UseAuthReturn {
 
       setIsLoading(true)
       try {
-        const baseUrl = apiUrl || process.env.TENX_API_URL || "http://localhost:3000"
+        const baseUrl = apiUrl || getApiUrl()
         const valid = await validateToken(baseUrl, token)
         setIsAuthenticated(valid)
 

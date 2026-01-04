@@ -52,7 +52,7 @@ export function CodeBlock(props: CodeBlockProps) {
     >
       <Show when={props.language && props.language !== "plaintext"}>
         <box paddingLeft={1} marginBottom={1}>
-          <text fg={theme.textMuted}>{props.language}</text>
+          <text fg={theme.textMuted}>{String(props.language || "")}</text>
         </box>
       </Show>
       <scrollbox

@@ -11,7 +11,8 @@ interface MessageListProps {
 }
 
 function generateMessageId(message: Message, index: number): string {
-  const contentPreview = message.content.slice(0, 50).replace(/\s+/g, "_")
+  const content = String(message.content || "")
+  const contentPreview = content.slice(0, 50).replace(/\s+/g, "_")
   return `${message.role}-${index}-${contentPreview}`
 }
 
@@ -64,7 +65,7 @@ export function MessageList(props: MessageListProps) {
             if (message.role === "system") {
               return (
                 <box paddingLeft={2} paddingTop={1} paddingBottom={1}>
-                  <text fg={theme.textMuted}>{message.content}</text>
+                  <text fg={theme.textMuted}>{String(message.content || "")}</text>
                 </box>
               )
             }

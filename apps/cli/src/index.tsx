@@ -67,6 +67,10 @@ async function executeMode(prompt: string, modelTier: ModelTier, quiet: boolean)
   const tools = createCoreToolRegistry()
   const router = new Router({
     client,
+    aiProviderConfig: {
+      apiKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+    },
     tools,
     defaultTier: modelTier,
     systemPrompt,
@@ -198,7 +202,7 @@ export function tui(args: AppArgs, onExit?: () => Promise<void>): Promise<void> 
         <ErrorBoundary
           fallback={(error) => (
             <box flexDirection="column" padding={1}>
-              <text fg="#EF4444">Fatal error: {error.message}</text>
+              <text fg="#EF4444">Fatal error: {String(error?.message || error || "Unknown error")}</text>
               <text fg="#737373">Press Ctrl+C to exit</text>
             </box>
           )}

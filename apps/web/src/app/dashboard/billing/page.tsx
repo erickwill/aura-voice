@@ -92,10 +92,10 @@ export default function BillingPage() {
   if (loading) {
     return (
       <div className="animate-pulse">
-        <div className="h-8 bg-gray-800 rounded w-48 mb-8"></div>
+        <div className="h-8 bg-white/10 rounded w-48 mb-8"></div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 h-64"></div>
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 h-64"></div>
+          <div className="bg-[#111] rounded-2xl p-6 border border-white/[0.08] h-64"></div>
+          <div className="bg-[#111] rounded-2xl p-6 border border-white/[0.08] h-64"></div>
         </div>
       </div>
     );
@@ -115,12 +115,12 @@ export default function BillingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Current Plan */}
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <div className="bg-[#111] rounded-2xl p-6 border border-white/[0.08]">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">Current Plan</h2>
             <span className={`px-3 py-1 text-sm rounded-full ${
               subscription?.status === 'active'
-                ? 'bg-green-500/20 text-green-400'
+                ? 'bg-emerald-500/20 text-emerald-400'
                 : subscription?.status === 'trialing'
                 ? 'bg-blue-500/20 text-blue-400'
                 : 'bg-yellow-500/20 text-yellow-400'
@@ -132,15 +132,15 @@ export default function BillingPage() {
           <div className="mb-6">
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-3xl font-bold">{planInfo.name}</span>
-              <span className="text-gray-400">{planInfo.price}/month</span>
+              <span className="text-gray-500">{planInfo.price}/month</span>
             </div>
-            <p className="text-gray-400">
+            <p className="text-gray-500">
               {planInfo.tokens} tokens per month
             </p>
           </div>
 
           {subscription?.cancelAtPeriodEnd && (
-            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
               <p className="text-yellow-400 text-sm">
                 Your subscription will be canceled at the end of the current period
                 {subscription.currentPeriodEnd && ` (${formatDate(subscription.currentPeriodEnd)})`}
@@ -149,7 +149,7 @@ export default function BillingPage() {
           )}
 
           {subscription?.currentPeriodEnd && !subscription.cancelAtPeriodEnd && (
-            <p className="text-gray-400 text-sm mb-6">
+            <p className="text-gray-500 text-sm mb-6">
               Next billing date: {formatDate(subscription.currentPeriodEnd)}
             </p>
           )}
@@ -159,14 +159,14 @@ export default function BillingPage() {
               <button
                 onClick={handleManageBilling}
                 disabled={portalLoading}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded-xl transition-colors disabled:opacity-50"
               >
                 {portalLoading ? 'Loading...' : 'Manage Subscription'}
               </button>
             ) : (
               <Link
                 href="/pricing"
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-black font-medium rounded-lg transition-colors text-center"
+                className="px-4 py-2 bg-white hover:bg-gray-100 text-black font-medium rounded-xl transition-colors text-center"
               >
                 Upgrade Plan
               </Link>
@@ -175,22 +175,22 @@ export default function BillingPage() {
         </div>
 
         {/* Usage */}
-        <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <div className="bg-[#111] rounded-2xl p-6 border border-white/[0.08]">
           <h2 className="text-xl font-semibold mb-6">Usage This Period</h2>
 
           <div className="mb-6">
             <div className="flex items-baseline justify-between mb-2">
-              <span className="text-gray-400">Tokens used</span>
-              <span className="text-sm text-gray-400">
+              <span className="text-gray-500">Tokens used</span>
+              <span className="text-sm text-gray-500">
                 {subscription?.usage ? formatNumber(subscription.usage.tokensUsed) : '0'} /
                 {subscription?.usage ? formatNumber(subscription.usage.tokensLimit) : '100k'}
               </span>
             </div>
-            <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden">
+            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${
                   usagePercent > 90 ? 'bg-red-500' :
-                  usagePercent > 70 ? 'bg-yellow-500' : 'bg-green-500'
+                  usagePercent > 70 ? 'bg-yellow-500' : 'bg-emerald-500'
                 }`}
                 style={{ width: `${usagePercent}%` }}
               />
@@ -198,21 +198,21 @@ export default function BillingPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">Used</p>
+            <div className="bg-white/5 rounded-xl p-4 border border-white/[0.06]">
+              <p className="text-gray-500 text-sm mb-1">Used</p>
               <p className="text-xl font-semibold text-white">
                 {subscription?.usage ? formatNumber(subscription.usage.tokensUsed) : '0'}
               </p>
             </div>
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <p className="text-gray-400 text-sm mb-1">Remaining</p>
-              <p className="text-xl font-semibold text-green-400">
+            <div className="bg-white/5 rounded-xl p-4 border border-white/[0.06]">
+              <p className="text-gray-500 text-sm mb-1">Remaining</p>
+              <p className="text-xl font-semibold text-emerald-400">
                 {subscription?.usage ? formatNumber(subscription.usage.tokensRemaining) : '100k'}
               </p>
             </div>
           </div>
 
-          <p className="text-gray-400 text-sm">
+          <p className="text-gray-500 text-sm">
             Usage resets on{' '}
             <span className="text-white">
               {subscription?.usage?.periodEnd
@@ -226,15 +226,15 @@ export default function BillingPage() {
       {/* Plan Comparison */}
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-6">Compare Plans</h2>
-        <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <div className="bg-[#111] rounded-2xl border border-white/[0.08] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-800">
-                  <th className="text-left p-4 text-gray-400 font-medium">Plan</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Tokens</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Price</th>
-                  <th className="text-left p-4 text-gray-400 font-medium">Features</th>
+                <tr className="border-b border-white/[0.06]">
+                  <th className="text-left p-4 text-gray-500 font-medium">Plan</th>
+                  <th className="text-left p-4 text-gray-500 font-medium">Tokens</th>
+                  <th className="text-left p-4 text-gray-500 font-medium">Price</th>
+                  <th className="text-left p-4 text-gray-500 font-medium">Features</th>
                   <th className="p-4"></th>
                 </tr>
               </thead>
@@ -242,18 +242,18 @@ export default function BillingPage() {
                 {Object.entries(PLAN_DISPLAY).map(([id, plan]) => {
                   const isCurrent = subscription?.planId === id || (!subscription?.planId && id === 'free');
                   return (
-                    <tr key={id} className="border-b border-gray-800 last:border-0">
+                    <tr key={id} className="border-b border-white/[0.06] last:border-0">
                       <td className="p-4">
                         <span className="font-medium">{plan.name}</span>
                         {isCurrent && (
-                          <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
+                          <span className="ml-2 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">
                             Current
                           </span>
                         )}
                       </td>
-                      <td className="p-4 text-gray-400">{plan.tokens}/month</td>
-                      <td className="p-4 text-gray-400">{plan.price}/month</td>
-                      <td className="p-4 text-gray-400">
+                      <td className="p-4 text-gray-500">{plan.tokens}/month</td>
+                      <td className="p-4 text-gray-500">{plan.price}/month</td>
+                      <td className="p-4 text-gray-500">
                         {id === 'free' && 'Community support'}
                         {id === 'starter' && 'Priority support'}
                         {id === 'pro' && 'Priority support + Early access'}
@@ -263,7 +263,7 @@ export default function BillingPage() {
                         {!isCurrent && (
                           <Link
                             href="/pricing"
-                            className="text-green-400 hover:text-green-300 text-sm font-medium"
+                            className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
                           >
                             {id === 'free' ? 'Downgrade' : 'Upgrade'}
                           </Link>
@@ -282,15 +282,15 @@ export default function BillingPage() {
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-6">Billing FAQ</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div className="bg-[#111] rounded-2xl p-6 border border-white/[0.08]">
             <h3 className="font-medium mb-2">When am I charged?</h3>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-500 text-sm">
               You&apos;re charged at the beginning of each billing period. Your usage resets at the same time.
             </p>
           </div>
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <div className="bg-[#111] rounded-2xl p-6 border border-white/[0.08]">
             <h3 className="font-medium mb-2">Can I change plans?</h3>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-500 text-sm">
               Yes! Upgrades take effect immediately. Downgrades take effect at the next billing period.
             </p>
           </div>
