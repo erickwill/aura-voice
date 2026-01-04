@@ -34,6 +34,7 @@ interface UseChatReturn {
   activeToolCalls: ToolCall[]
   sendMessage: (content: string | ContentPart[], tier?: ModelTier) => Promise<void>
   clearMessages: () => void
+  loadMessages: (messages: Message[]) => void  // Load messages from a resumed session
   clearError: () => void
   cancel: () => void  // Cancel the current streaming operation
 }
@@ -326,6 +327,18 @@ export function useChat({
     setActiveToolCalls([])
   }
 
+  const loadMessages = (msgs: Message[]) => {
+    // Clone the messages to ensure fresh objects for Solid.js reactivity
+    const clonedMessages = msgs.map(m => ({
+      ...m,
+      // Ensure content is a string (not undefined or other types)
+      content: String(m.content || ""),
+    }))
+    setMessages(clonedMessages)
+    setError(null)
+    setActiveToolCalls([])
+  }
+
   const clearError = () => {
     setError(null)
   }
@@ -354,6 +367,7 @@ export function useChat({
     },
     sendMessage,
     clearMessages,
+    loadMessages,
     clearError,
     cancel,
   }

@@ -1,7 +1,8 @@
-import { createMemo, For, Show } from "solid-js"
+import { For, Show } from "solid-js"
 import { useTheme } from "../context"
 import { UserMessage } from "./UserMessage"
 import { AssistantMessage } from "./AssistantMessage"
+import { ThinkingIndicator } from "./ThinkingIndicator"
 import type { Message } from "@10x/shared"
 
 interface MessageListProps {
@@ -10,82 +11,46 @@ interface MessageListProps {
   maxHeight?: number | string
 }
 
-function generateMessageId(message: Message, index: number): string {
-  const content = String(message.content || "")
-  const contentPreview = content.slice(0, 50).replace(/\s+/g, "_")
-  return `${message.role}-${index}-${contentPreview}`
-}
-
-interface MessageWithId extends Message {
-  _stableId: string
-}
-
 export function MessageList(props: MessageListProps) {
   const { theme } = useTheme()
 
-  // Assign stable IDs to messages
-  const messagesWithIds = createMemo((): MessageWithId[] => {
-    return props.messages.map((message, index) => ({
-      ...message,
-      _stableId: generateMessageId(message, index),
-    }))
-  })
-
-  // Split messages: completed ones vs current streaming one
-  const lastMessage = () => messagesWithIds()[messagesWithIds().length - 1]
-  const isLastStreaming = () => props.isStreaming && lastMessage()?.role === "assistant"
-
-  // Completed messages (all except the currently streaming one)
-  const completedMessages = createMemo(() =>
-    isLastStreaming() ? messagesWithIds().slice(0, -1) : messagesWithIds()
-  )
-
-  // The currently streaming message (if any)
-  const streamingMessage = () => (isLastStreaming() ? lastMessage() : null)
+  // Show thinking indicator when streaming and waiting for content
+  const showThinkingIndicator = () => {
+    if (!props.isStreaming) return false
+    if (props.messages.length === 0) return true
+    const last = props.messages[props.messages.length - 1]
+    // Show if last message is user (waiting for response)
+    if (last?.role === "user") return true
+    // Show if assistant message has no content yet
+    if (last?.role === "assistant" && !last.content && (!last.toolCalls || last.toolCalls.length === 0)) return true
+    return false
+  }
 
   return (
-    <scrollbox
-      scrollY={true}
-      scrollX={false}
-      stickyScroll={true}
-      stickyStart="bottom"
-      flexGrow={1}
-      maxHeight={props.maxHeight}
-    >
-      <box flexDirection="column" gap={1}>
-        {/* Render all messages in order */}
-        <For each={completedMessages()}>
-          {(message) => {
-            if (message.role === "user") {
-              return <UserMessage content={message.content} />
-            }
-            if (message.role === "assistant") {
-              return <AssistantMessage message={message} isStreaming={false} />
-            }
-            if (message.role === "system") {
-              return (
-                <box paddingLeft={2} paddingTop={1} paddingBottom={1}>
-                  <text fg={theme.textMuted}>{String(message.content || "")}</text>
-                </box>
-              )
-            }
-            return null
-          }}
-        </For>
-
-        {/* Currently streaming message */}
-        <Show when={streamingMessage()}>
-          {(msg) => <AssistantMessage message={msg()} isStreaming={true} />}
-        </Show>
-
-        {/* Thinking indicator */}
-        <Show when={props.isStreaming && !streamingMessage()}>
-          <box paddingLeft={2} gap={1}>
-            <text fg={theme.primary}>...</text>
-            <text fg={theme.textMuted}>Thinking...</text>
+    <box flexDirection="column" flexGrow={1} width="100%">
+      {/* Render all messages in order */}
+      <For each={props.messages}>
+        {(message, index) => (
+          <box flexDirection="column" marginTop={index() > 0 ? 1 : 0} width="100%">
+            <Show when={message.role === "user"}>
+              <UserMessage content={message.content} />
+            </Show>
+            <Show when={message.role === "assistant"}>
+              <AssistantMessage message={message} isStreaming={props.isStreaming && index() === props.messages.length - 1} />
+            </Show>
+            <Show when={message.role === "system"}>
+              <text fg={theme.textMuted}>{String(message.content || "")}</text>
+            </Show>
           </box>
-        </Show>
-      </box>
-    </scrollbox>
+        )}
+      </For>
+
+      {/* Thinking indicator - shown at the bottom when waiting for response */}
+      <Show when={showThinkingIndicator()}>
+        <box marginTop={1}>
+          <ThinkingIndicator />
+        </box>
+      </Show>
+    </box>
   )
 }

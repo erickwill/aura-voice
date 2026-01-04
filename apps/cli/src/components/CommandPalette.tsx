@@ -13,12 +13,15 @@ interface CommandPaletteProps {
   filter: string
   selectedIndex: number
   visible: boolean
+  maxVisible?: number
 }
 
 const categoryOrder = ["session", "model", "superpower", "skill", "other"] as const
+const DEFAULT_MAX_VISIBLE = 8
 
 export function CommandPalette(props: CommandPaletteProps) {
   const { theme } = useTheme()
+  const maxVisible = () => props.maxVisible ?? DEFAULT_MAX_VISIBLE
 
   // Filter commands based on input
   const filtered = createMemo(() => {
@@ -57,32 +60,79 @@ export function CommandPalette(props: CommandPaletteProps) {
     return result
   })
 
+  // Calculate visible window based on selection
+  const visibleWindow = createMemo(() => {
+    const list = flatList()
+    const total = list.length
+    const max = maxVisible()
+
+    if (total <= max) {
+      return { items: list, startIdx: 0, hasMore: false, hasLess: false }
+    }
+
+    const selected = props.selectedIndex
+    // Keep selection centered in the window when possible
+    let startIdx = Math.max(0, selected - Math.floor(max / 2))
+    // Adjust if we're near the end
+    if (startIdx + max > total) {
+      startIdx = total - max
+    }
+
+    return {
+      items: list.slice(startIdx, startIdx + max),
+      startIdx,
+      hasLess: startIdx > 0,
+      hasMore: startIdx + max < total,
+    }
+  })
+
   return (
     <Show when={props.visible && filtered().length > 0}>
-      <box flexDirection="column" paddingLeft={1} paddingRight={1}>
-        <Show when={filtered().length === 0}>
-          <text fg={theme.textMuted}>No matching commands</text>
+      <box
+        flexDirection="column"
+        paddingLeft={2}
+        paddingRight={2}
+        paddingTop={1}
+        paddingBottom={1}
+        border="round"
+        borderColor={theme.border}
+      >
+        {/* Scroll indicator - up */}
+        <Show when={visibleWindow().hasLess}>
+          <box paddingLeft={1}>
+            <text fg={theme.textMuted}>▲ more above</text>
+          </box>
         </Show>
 
-        <For each={flatList()}>
+        <For each={visibleWindow().items}>
           {(item) => {
             const isSelected = () => item.idx === props.selectedIndex
             return (
-              <box gap={1}>
-                <text fg={isSelected() ? theme.primary : theme.text} bold={isSelected()}>
-                  {isSelected() ? ">" : " "}
-                </text>
-                <text fg={isSelected() ? theme.primary : theme.secondary} bold={isSelected()}>
-                  /{String(item.cmd.name || "")}
-                </text>
-                <Show when={item.cmd.args}>
-                  <text fg={theme.textMuted}>{String(item.cmd.args || "")}</text>
-                </Show>
-                <text fg={theme.textMuted}>{String(item.cmd.description || "")}</text>
+              <box flexDirection="column">
+                {/* Command name line */}
+                <box>
+                  <text fg={isSelected() ? theme.primary : theme.text} bold={isSelected()}>
+                    /{String(item.cmd.name || "")}
+                  </text>
+                  <Show when={item.cmd.args}>
+                    <text fg={theme.textMuted}> {String(item.cmd.args || "")}</text>
+                  </Show>
+                </box>
+                {/* Description on next line, indented */}
+                <box paddingLeft={2}>
+                  <text fg={theme.textMuted}>{String(item.cmd.description || "")}</text>
+                </box>
               </box>
             )
           }}
         </For>
+
+        {/* Scroll indicator - down */}
+        <Show when={visibleWindow().hasMore}>
+          <box paddingLeft={1}>
+            <text fg={theme.textMuted}>▼ more below</text>
+          </box>
+        </Show>
       </box>
     </Show>
   )
@@ -93,8 +143,7 @@ export const builtinCommands: Command[] = [
   // Session commands
   { name: "help", description: "Show help", category: "other" },
   { name: "clear", description: "Clear conversation", category: "session" },
-  { name: "sessions", description: "List recent sessions", category: "session" },
-  { name: "resume", args: "<name>", description: "Resume a session", category: "session" },
+  { name: "resume", description: "Resume a session", category: "session" },
   { name: "rename", args: "<name>", description: "Rename current session", category: "session" },
   { name: "fork", args: "[name]", description: "Fork current session", category: "session" },
 
@@ -135,15 +184,24 @@ export function getAllCommands(skills: string[], superpowers: string[]): Command
   return commands
 }
 
-// Get filtered commands for current input
+// Sort commands by category order (same as display order)
+function sortByCategory(commands: Command[]): Command[] {
+  return [...commands].sort((a, b) => {
+    const aIdx = categoryOrder.indexOf(a.category)
+    const bIdx = categoryOrder.indexOf(b.category)
+    return aIdx - bIdx
+  })
+}
+
+// Get filtered commands for current input (sorted by category to match display order)
 export function getFilteredCommands(allCommands: Command[], filter: string): Command[] {
-  if (!filter) return allCommands.slice(0, 10)
+  const sorted = sortByCategory(allCommands)
+
+  if (!filter) return sorted
 
   const filterLower = filter.toLowerCase()
-  return allCommands
-    .filter(
-      (cmd) =>
-        cmd.name.toLowerCase().startsWith(filterLower) || cmd.name.toLowerCase().includes(filterLower)
-    )
-    .slice(0, 10)
+  return sorted.filter(
+    (cmd) =>
+      cmd.name.toLowerCase().startsWith(filterLower) || cmd.name.toLowerCase().includes(filterLower)
+  )
 }

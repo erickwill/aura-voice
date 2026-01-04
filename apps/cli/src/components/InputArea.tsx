@@ -3,7 +3,7 @@ import { useKeyboard, useRenderer } from "@opentui/solid"
 import { TextareaRenderable, type KeyBinding } from "@opentui/core"
 import clipboardy from "clipboardy"
 import { useTheme } from "../context"
-import type { Command } from "./CommandPalette"
+import { CommandPalette, type Command } from "./CommandPalette"
 
 async function getClipboard(): Promise<string> {
   // Try native pbpaste first on macOS (more reliable)
@@ -34,6 +34,8 @@ interface InputAreaProps {
   commandPaletteIndex?: number
   onCommandPaletteIndexChange?: (index: number) => void
   onHistorySearch?: () => void
+  // Callback when a command with args is selected - allows parent to intercept and show subcommands
+  onCommandWithArgsSelect?: (command: Command) => boolean // return true if handled (shows subcommands), false to use default behavior
 }
 
 export function InputArea(props: InputAreaProps) {
@@ -84,8 +86,8 @@ export function InputArea(props: InputAreaProps) {
   })
 
   // Keybindings for textarea
+  // NOTE: We handle "return" manually in onKeyDown to support command palette
   const textareaKeybindings: KeyBinding[] = [
-    { name: "return", action: "submit" },
     { name: "return", meta: true, action: "newline" },
     { name: "up", action: "move-up" },
     { name: "down", action: "move-down" },
@@ -163,12 +165,26 @@ export function InputArea(props: InputAreaProps) {
     }
   })
 
-  // Fixed number of suggestion lines to prevent layout shifts
-  const SUGGESTION_LINES = 6
-  const displayCommands = () => (showPalette() ? (props.commands || []).slice(0, SUGGESTION_LINES) : [])
+  // Sync textarea when props.value is cleared externally (e.g., by App.tsx after subcommand selection)
+  createEffect(() => {
+    if (input && props.value === "" && input.plainText !== "") {
+      input.clear()
+    }
+  })
+
+  // Command filter for palette
+  const commandFilter = () => (props.value.startsWith("/") ? props.value.slice(1) : "")
 
   return (
     <box flexDirection="column" paddingLeft={1} paddingRight={1} paddingBottom={1}>
+      {/* Command palette dropdown */}
+      <CommandPalette
+        commands={props.commands || []}
+        filter={commandFilter()}
+        selectedIndex={props.commandPaletteIndex ?? 0}
+        visible={showPalette()}
+      />
+
       {/* Input line with native textarea */}
       <box
         border={["top", "bottom"]}
@@ -252,7 +268,7 @@ export function InputArea(props: InputAreaProps) {
               return
             }
 
-            // Command palette navigation
+            // Command palette navigation (Enter is handled by App's global keyboard handler)
             if (showPalette() && props.onCommandPaletteIndexChange && props.commands) {
               if (e.name === "up") {
                 props.onCommandPaletteIndexChange(
@@ -280,28 +296,15 @@ export function InputArea(props: InputAreaProps) {
                 e.preventDefault()
                 return
               }
-              // Enter executes the command directly
+              // Enter - let global handler manage slash command execution
               if (e.name === "return") {
-                const selected = props.commands[props.commandPaletteIndex ?? 0]
-                if (selected) {
-                  const newValue = `/${selected.name}${selected.args ? " " : ""}`
-                  input.setText(newValue)
-                  props.onChange(newValue)
-                  // Submit immediately if command doesn't need args
-                  if (!selected.args) {
-                    props.onSubmit(newValue)
-                    input.clear()
-                  } else {
-                    input.cursorOffset = newValue.length
-                  }
-                }
                 e.preventDefault()
                 return
               }
             }
 
-            // History navigation (only when palette not visible and at line boundaries)
-            if (!showPalette()) {
+            // History navigation (only when palette not visible, no subcommand mode, and has content)
+            if (!showPalette() && !props.subcommandMode && props.value) {
               if (e.name === "up" && input.cursorOffset === 0) {
                 if (history().length === 0) return
                 if (historyIndex() === -1) {
@@ -331,6 +334,18 @@ export function InputArea(props: InputAreaProps) {
                 e.preventDefault()
                 return
               }
+
+              // Manual Enter to submit (since we removed the keybinding)
+              if (e.name === "return") {
+                submit()
+                e.preventDefault()
+                return
+              }
+            }
+
+            // Catch-all: prevent Enter from inserting newlines when handled by App.tsx
+            if (e.name === "return") {
+              e.preventDefault()
             }
           }}
           onSubmit={submit}

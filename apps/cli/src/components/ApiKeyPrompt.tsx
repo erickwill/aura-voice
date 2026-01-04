@@ -16,8 +16,8 @@ export function ApiKeyPrompt(props: ApiKeyPromptProps) {
   const [selectedOption, setSelectedOption] = createSignal(0)
 
   const options = [
-    { key: "1", label: "Set OPENROUTER_API_KEY environment variable", description: "(Recommended)" },
-    { key: "2", label: "Enter API key manually", description: "(Saved to ~/.config/10x/)" },
+    { key: "1", label: "Use your own API key", description: "Bring your own OpenRouter API key", disabled: false, tag: "(recommended)", tagColor: "#22C55E" },
+    { key: "2", label: "Sign in with 10x", description: "Free tier includes 100k tokens/month", disabled: true, tag: "(available soon)", tagColor: "#EAB308" },
   ]
 
   useKeyboard((evt) => {
@@ -40,19 +40,21 @@ export function ApiKeyPrompt(props: ApiKeyPromptProps) {
       }
 
       if (key === "1") {
-        setMode("env_instructions")
-        return
-      }
-
-      if (key === "2") {
         setMode("manual_entry")
         return
       }
 
+      // Option 2 is disabled (10x auth - available soon)
+      if (key === "2") {
+        return // Do nothing
+      }
+
       if (key === "return") {
+        const selected = options[selectedOption()]
+        if (selected.disabled) {
+          return // Do nothing for disabled options
+        }
         if (selectedOption() === 0) {
-          setMode("env_instructions")
-        } else {
           setMode("manual_entry")
         }
         return
@@ -96,7 +98,7 @@ export function ApiKeyPrompt(props: ApiKeyPromptProps) {
 }
 
 function AuthSelection(props: {
-  options: { key: string; label: string; description: string }[]
+  options: { key: string; label: string; description: string; disabled: boolean; tag: string; tagColor: string }[]
   selectedOption: number
   onSelect: (idx: number) => void
 }) {
@@ -106,28 +108,25 @@ function AuthSelection(props: {
     <box flexDirection="column">
       <box marginBottom={2}>
         <text>
-          <span style={{ fg: theme.primary, bold: true }}>Authentication Required</span>
-        </text>
-      </box>
-
-      <box marginBottom={1}>
-        <text>
-          <span style={{ fg: theme.text }}>10x uses OpenRouter for AI models. Choose how to authenticate:</span>
+          <span style={{ fg: theme.text }}>How would you like to authenticate?</span>
         </text>
       </box>
 
       <box flexDirection="column" marginBottom={2} marginTop={1}>
         {props.options.map((opt, idx) => (
-          <box marginBottom={1}>
+          <box flexDirection="column" marginBottom={1}>
             <text>
               <span style={{ fg: props.selectedOption === idx ? theme.primary : theme.textMuted }}>
                 {props.selectedOption === idx ? ">" : " "}
               </span>
               <span style={{ fg: theme.textMuted }}> [{opt.key}] </span>
-              <span style={{ fg: props.selectedOption === idx ? theme.text : theme.textMuted, bold: props.selectedOption === idx }}>
+              <span style={{ fg: props.selectedOption === idx && !opt.disabled ? theme.text : theme.textMuted, bold: props.selectedOption === idx && !opt.disabled }}>
                 {opt.label}
               </span>
-              <span style={{ fg: theme.textMuted }}> {opt.description}</span>
+              <span style={{ fg: opt.tagColor }}> {opt.tag}</span>
+            </text>
+            <text>
+              <span style={{ fg: theme.textMuted }}>      {opt.description}</span>
             </text>
           </box>
         ))}
@@ -135,7 +134,7 @@ function AuthSelection(props: {
 
       <box>
         <text>
-          <span style={{ fg: theme.textMuted }}>↑↓ Navigate • Enter Select • Esc Cancel</span>
+          <span style={{ fg: theme.textMuted }}>Up/Down Navigate | Enter Select | Esc Cancel</span>
         </text>
       </box>
     </box>

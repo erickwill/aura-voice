@@ -8,15 +8,9 @@ export function UserMessage(props: UserMessageProps) {
   const { theme } = useTheme()
 
   return (
-    <box flexDirection="column" marginTop={1} marginBottom={1}>
-      <box marginBottom={1}>
-        <text fg={theme.info} bold>
-          You
-        </text>
-      </box>
-      <box paddingLeft={2}>
-        <text fg={theme.text}>{String(props.content || "")}</text>
-      </box>
+    <box flexDirection="row">
+      <text fg={theme.textMuted}>{"> "}</text>
+      <text fg={theme.text}>{String(props.content || "")}</text>
     </box>
   )
 }
