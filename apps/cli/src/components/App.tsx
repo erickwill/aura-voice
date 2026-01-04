@@ -7,10 +7,15 @@ import { MessageList } from "./MessageList"
 import { AuthPrompt } from "./AuthPrompt"
 import { DeviceAuthFlow } from "./DeviceAuthFlow"
 import { PermissionPrompt } from "./PermissionPrompt"
+import { AskQuestionPrompt } from "./AskQuestionPrompt"
+import { PlanApprovalPrompt } from "./PlanApprovalPrompt"
 import { getAllCommands, getFilteredCommands } from "./CommandPalette"
+import { SubcommandPicker, type SubcommandOption } from "./SubcommandPicker"
 import { useChat } from "../hooks/useChat"
 import { useSession } from "../hooks/useSession"
 import { usePermissions } from "../hooks/usePermissions"
+import { useAskQuestion } from "../hooks/useAskQuestion"
+import { usePlanMode } from "../hooks/usePlanMode"
 import { saveApiKey, getApiKey, getAuthToken, saveAuthToken, clearAuth, isAuthenticated, getAuthMode, type AuthMode } from "../config"
 import {
   buildFullSystemPrompt,
@@ -24,6 +29,8 @@ import {
   getSuperpower,
   listSuperpowerTriggers,
   formatSuperpowersForPrompt,
+  SYSTEM_PROMPT,
+  SECURITY_PROMPT,
 } from "@10x/core"
 import type { ModelTier, RoutingMode } from "@10x/shared"
 import { existsSync } from "fs"
@@ -57,11 +64,24 @@ export function App(props: AppProps) {
   const [routingMode, setRoutingMode] = createSignal<RoutingMode>("auto")
   const [commandPaletteIndex, setCommandPaletteIndex] = createSignal(0)
 
+  // Subcommand mode state
+  const [subcommandMode, setSubcommandMode] = createSignal<{
+    command: string
+    options: SubcommandOption[]
+    selectedIndex: number
+  } | null>(null)
+
   // Session management
   const session = useSession({ defaultModel: initialModel() })
 
   // Permissions management
   const permissions = usePermissions()
+
+  // Ask question management
+  const askQuestion = useAskQuestion()
+
+  // Plan mode management
+  const planMode = usePlanMode()
 
   // Initialize on mount
   onMount(() => {
@@ -107,7 +127,8 @@ export function App(props: AppProps) {
 
   // Build system prompt with guidance from 10X.md files, skills, and superpowers
   const systemPrompt = createMemo(() => {
-    const basePrompt = `You are 10x, a fast and helpful AI coding assistant. Be concise and direct. You have access to tools for reading, writing, and editing files, searching with glob and grep, and running bash commands.`
+    // Use the comprehensive system prompt from @10x/core with security guidelines
+    const basePrompt = `${SYSTEM_PROMPT}\n\n${SECURITY_PROMPT}`
     const skillsSection = buildSkillsPromptSection()
     const superpowersSection = formatSuperpowersForPrompt()
     const combinedExtras = [skillsSection, superpowersSection].filter(Boolean).join("\n\n")
@@ -177,13 +198,67 @@ export function App(props: AppProps) {
         exit()
       }
     }
-    // Escape also cancels streaming
-    if (evt.name === "escape" && chat.isStreaming) {
-      chat.cancel()
-      return
+    // Escape cancels streaming or subcommand mode
+    if (evt.name === "escape") {
+      if (chat.isStreaming) {
+        chat.cancel()
+        return
+      }
+      if (subcommandMode()) {
+        setSubcommandMode(null)
+        return
+      }
     }
     if (evt.ctrl && evt.name === "d") {
       exit()
+    }
+
+    // Subcommand picker navigation
+    const mode = subcommandMode()
+    if (mode) {
+      if (evt.name === "up") {
+        const newIdx = mode.selectedIndex > 0 ? mode.selectedIndex - 1 : mode.options.length - 1
+        setSubcommandMode({ ...mode, selectedIndex: newIdx })
+        return
+      }
+      if (evt.name === "down") {
+        const newIdx = mode.selectedIndex < mode.options.length - 1 ? mode.selectedIndex + 1 : 0
+        setSubcommandMode({ ...mode, selectedIndex: newIdx })
+        return
+      }
+      if (evt.name === "return" || evt.name === "tab") {
+        const selected = mode.options[mode.selectedIndex]
+        if (selected) {
+          const fullCommand = `/${mode.command} ${selected.value}`
+          setSubcommandMode(null)
+          setInputValue("")
+          handleSubmit(fullCommand)
+        }
+        return
+      }
+    }
+
+    // Command palette - handle Enter to execute selected command
+    const showingPalette = inputValue().startsWith("/") && !chat.isStreaming && !permissions.pendingRequest
+    if (showingPalette && evt.name === "return") {
+      const commands = filteredCommands()
+      const selected = commands[commandPaletteIndex()]
+      if (selected) {
+        // Check if command should show subcommand picker
+        if (selected.name === "resume") {
+          showResumeSubcommands()
+          return
+        }
+        if (selected.name === "model") {
+          showModelSubcommands()
+          return
+        }
+        // Execute all other commands directly
+        const fullCommand = `/${selected.name}`
+        setInputValue("")
+        handleSubmit(fullCommand)
+        return
+      }
     }
   })
 
@@ -217,6 +292,80 @@ export function App(props: AppProps) {
     exit()
   }
 
+  // Subcommand mode handlers
+  const handleSubcommandIndexChange = (index: number) => {
+    const current = subcommandMode()
+    if (current) {
+      setSubcommandMode({ ...current, selectedIndex: index })
+    }
+  }
+
+  const handleSubcommandSelect = (option: SubcommandOption) => {
+    const mode = subcommandMode()
+    if (!mode) return
+
+    // Execute the command with the selected option
+    const fullCommand = `/${mode.command} ${option.value}`
+    setSubcommandMode(null)
+    setInputValue("")
+    handleSubmit(fullCommand)
+  }
+
+  const handleSubcommandCancel = () => {
+    setSubcommandMode(null)
+  }
+
+  // Helper to show subcommand picker for /resume
+  const showResumeSubcommands = () => {
+    const sessions = session.list()
+    if (sessions.length === 0) {
+      setSystemMessage("No sessions found.")
+      setInputValue("")
+      return
+    }
+
+    const options: SubcommandOption[] = sessions.slice(0, 20).map((s, i) => ({
+      value: s.name ?? s.id,
+      label: s.name ?? s.lastUserPrompt ?? (s.messageCount === 0 ? "No messages" : s.id.slice(0, 8)),
+      description: `${s.messageCount} msgs, ${s.updatedAt.toLocaleDateString()}`,
+    }))
+
+    setSubcommandMode({
+      command: "resume",
+      options,
+      selectedIndex: 0,
+    })
+  }
+
+  // Helper to show subcommand picker for /model
+  const showModelSubcommands = () => {
+    const options: SubcommandOption[] = [
+      { value: "auto", label: "auto", description: "Auto-router selects best model" },
+      { value: "superfast", label: "superfast", description: "Always use superfast (GPT OSS)" },
+      { value: "fast", label: "fast", description: "Always use fast (Kimi K2)" },
+      { value: "smart", label: "smart", description: "Always use smart (Opus 4.5)" },
+    ]
+
+    setSubcommandMode({
+      command: "model",
+      options,
+      selectedIndex: 0,
+    })
+  }
+
+  // Handler for when a command with args is selected - show subcommands if available
+  const handleCommandWithArgsSelect = (command: { name: string; args?: string }) => {
+    if (command.name === "resume") {
+      showResumeSubcommands()
+      return true
+    }
+    if (command.name === "model") {
+      showModelSubcommands()
+      return true
+    }
+    return false // Not handled, use default behavior
+  }
+
   const handleSubmit = async (value: string) => {
     if (!value.trim()) return
     setSystemMessage(null)
@@ -237,11 +386,10 @@ export function App(props: AppProps) {
           setSystemMessage(`Commands:
   /help              Show this help
   /clear             Clear conversation
-  /sessions          List recent sessions
-  /resume <name>     Resume a session
+  /resume            Resume a session (shows picker)
   /rename <name>     Rename current session
   /fork [name]       Fork current session
-  /model             Show current model
+  /model             Show/set routing mode
   /skills            List available skills
   /superpowers       List multi-step workflows
   /image <file>      Analyze an image
@@ -261,35 +409,16 @@ Superpowers: /review, /pr, /refactor [args]`)
           setInputValue("")
           return
 
-        case "sessions": {
-          const list = session.list()
-          if (list.length === 0) {
-            setSystemMessage("No sessions found.")
-          } else {
-            const formatted = list
-              .slice(0, 10)
-              .map((s, i) => {
-                const name = s.name ?? s.id.slice(0, 8)
-                const date = s.updatedAt.toLocaleDateString()
-                const msgs = s.messageCount
-                return `  ${i + 1}. ${name} (${msgs} msgs, ${date})`
-              })
-              .join("\n")
-            setSystemMessage(`Recent sessions:\n${formatted}`)
-          }
-          setInputValue("")
-          return
-        }
-
         case "resume":
           if (!args) {
-            setSystemMessage("Usage: /resume <name or id>")
+            // Show the picker
+            showResumeSubcommands()
           } else {
+            // Direct resume with name/id
             const resumed = session.resume(args)
             if (resumed) {
-              chat.clearMessages()
+              chat.loadMessages(resumed.messages)
               setShowWelcome(false)
-              setSystemMessage(`Resumed: ${resumed.name ?? resumed.id}`)
             } else {
               setSystemMessage(`Session not found: ${args}`)
             }
@@ -581,42 +710,41 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
               <text>
                 <span style={{ fg: theme.primary, bold: true }}>10x</span>
                 <span style={{ fg: theme.textMuted }}> • </span>
-                <span style={{ fg: authMode() === "10x" ? "#22D3EE" : theme.textMuted }}>
-                  {authMode() === "10x" ? "10x" : "BYOK"}
-                </span>
-                <span style={{ fg: theme.textMuted }}> • </span>
-                <span style={{ fg: theme.primary }}>◆ {routingMode() === "auto" ? `auto (${String(chat.currentTier || "smart")})` : String(chat.currentTier || "smart")}</span>
+                <span style={{ fg: theme.primary }}>{routingMode() === "auto" ? `auto (${String(chat.currentTier || "smart")})` : String(chat.currentTier || "smart")}</span>
+                <Show when={planMode.planMode.active}>
+                  <span style={{ fg: theme.textMuted }}> • </span>
+                  <span style={{ fg: theme.warning, bold: true }}>PLAN MODE</span>
+                </Show>
               </text>
               <text>
-                <span style={{ fg: theme.textMuted }}>℗ {process.cwd()}</span>
+                <span style={{ fg: theme.textMuted }}>{process.cwd()}</span>
               </text>
             </box>
 
             {/* Main content area */}
-            <box flexDirection="column" flexGrow={1} justifyContent="center" alignItems="center">
-              <Show
-                when={!showWelcome() || chat.messages.length > 0}
-                fallback={
-                  <box flexDirection="column" alignItems="center">
-                    <text fg={theme.text}>Welcome to 10x!</text>
-                    <text>{"\n"}</text>
-                    <text fg="#22D3EE">{bannerLines[0]}</text>
-                    <text fg="#2DD4D0">{bannerLines[1]}</text>
-                    <text fg="#38BDF8">{bannerLines[2]}</text>
-                    <text fg="#6366F1">{bannerLines[3]}</text>
-                    <text fg="#8B5CF6">{bannerLines[4]}</text>
-                    <text fg="#A855F7">{bannerLines[5]}</text>
-                    <text>{"\n"}</text>
-                    <text fg={theme.textMuted}>{String(chat.currentTier || "smart")}</text>
-                    <text fg={theme.textMuted}>{process.cwd()}</text>
-                    <text fg={theme.textMuted}>build: 2026-01-04-v2</text>
+            <box flexGrow={1} flexDirection="column">
+                <Show
+                  when={!showWelcome() || chat.messages.length > 0}
+                  fallback={
+                    <box flexDirection="column" alignItems="center">
+                      <text fg={theme.text}>Welcome to 10x!</text>
+                      <text>{"\n"}</text>
+                      <text fg="#22D3EE">{bannerLines[0]}</text>
+                      <text fg="#2DD4D0">{bannerLines[1]}</text>
+                      <text fg="#38BDF8">{bannerLines[2]}</text>
+                      <text fg="#6366F1">{bannerLines[3]}</text>
+                      <text fg="#8B5CF6">{bannerLines[4]}</text>
+                      <text fg="#A855F7">{bannerLines[5]}</text>
+                      <text>{"\n"}</text>
+                      <text fg={theme.textMuted}>{String(chat.currentTier || "smart")}</text>
+                      <text fg={theme.textMuted}>{process.cwd()}</text>
+                    </box>
+                  }
+                >
+                  <box flexDirection="column" paddingLeft={1} paddingRight={1} width="100%">
+                    <MessageList messages={chat.messages} isStreaming={chat.isStreaming} />
                   </box>
-                }
-              >
-                <box flexDirection="column" paddingLeft={1} paddingRight={1} width="100%">
-                  <MessageList messages={chat.messages} isStreaming={chat.isStreaming} />
-                </box>
-              </Show>
+                </Show>
 
               <Show when={systemMessage()}>
                 <box marginTop={1} marginBottom={1} paddingLeft={2}>
@@ -650,7 +778,35 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
                   onResponse={permissions.respond}
                 />
               </Show>
+
+              <Show when={askQuestion.pendingRequest}>
+                <AskQuestionPrompt
+                  questions={askQuestion.pendingRequest!.questions}
+                  onResponse={askQuestion.respond}
+                />
+              </Show>
+
+              <Show when={planMode.pendingApproval}>
+                <PlanApprovalPrompt
+                  request={planMode.pendingApproval!}
+                  onApprove={planMode.approve}
+                  onReject={planMode.reject}
+                />
+              </Show>
             </box>
+
+            {/* Subcommand picker - shown when selecting options for a command */}
+            <Show when={subcommandMode()}>
+              {(mode) => (
+                <box flexShrink={0} flexGrow={0}>
+                  <SubcommandPicker
+                    command={mode().command}
+                    options={mode().options}
+                    selectedIndex={mode().selectedIndex}
+                  />
+                </box>
+              )}
+            </Show>
 
             {/* Input at bottom - fixed height */}
             <box flexShrink={0} flexGrow={0}>
@@ -658,10 +814,11 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
                 value={inputValue()}
                 onChange={setInputValue}
                 onSubmit={handleSubmit}
-                disabled={chat.isStreaming || !!permissions.pendingRequest}
+                disabled={chat.isStreaming || !!permissions.pendingRequest || !!askQuestion.pendingRequest || !!planMode.pendingApproval || !!subcommandMode()}
                 commands={filteredCommands()}
                 commandPaletteIndex={commandPaletteIndex()}
                 onCommandPaletteIndexChange={setCommandPaletteIndex}
+                onCommandWithArgsSelect={handleCommandWithArgsSelect}
               />
             </box>
           </box>

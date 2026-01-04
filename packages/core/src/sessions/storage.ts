@@ -150,6 +150,14 @@ export function listSessions(limit = 20): SessionSummary[] {
 
   return rows.map((row) => {
     const messages = JSON.parse(row.messages) as Message[];
+    // Find the last user message for preview
+    const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+    let lastUserPrompt: string | undefined;
+    if (lastUserMsg) {
+      // Truncate to ~50 chars, clean up whitespace
+      const cleaned = lastUserMsg.content.replace(/\s+/g, ' ').trim();
+      lastUserPrompt = cleaned.length > 50 ? cleaned.slice(0, 47) + '...' : cleaned;
+    }
     return {
       id: row.id,
       name: row.name ?? undefined,
@@ -158,6 +166,7 @@ export function listSessions(limit = 20): SessionSummary[] {
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       state: row.state as Session['state'],
+      lastUserPrompt,
     };
   });
 }

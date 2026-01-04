@@ -35,15 +35,19 @@ export function AuthPrompt(props: AuthPromptProps) {
   const options = [
     {
       key: "1",
-      label: "Sign in with 10x",
-      description: "Free tier includes 100k tokens/month",
-      recommended: true,
+      label: "Use your own API key",
+      description: "Bring your own OpenRouter API key",
+      disabled: false,
+      tag: "(recommended)",
+      tagColor: "#22C55E",
     },
     {
       key: "2",
-      label: "Use your own API key",
-      description: "Bring your own OpenRouter API key",
-      recommended: false,
+      label: "Sign in with 10x",
+      description: "Free tier includes 100k tokens/month",
+      disabled: true,
+      tag: "(available soon)",
+      tagColor: "#EAB308",
     },
   ]
 
@@ -67,19 +71,21 @@ export function AuthPrompt(props: AuthPromptProps) {
       }
 
       if (key === "1") {
-        props.onSelectWebAuth()
-        return
-      }
-
-      if (key === "2") {
         setMode("manual_entry")
         return
       }
 
+      // Option 2 is disabled (10x auth - available soon)
+      if (key === "2") {
+        return // Do nothing
+      }
+
       if (key === "return") {
+        const selected = options[selectedOption()]
+        if (selected.disabled) {
+          return // Do nothing for disabled options
+        }
         if (selectedOption() === 0) {
-          props.onSelectWebAuth()
-        } else {
           setMode("manual_entry")
         }
         return
@@ -94,8 +100,9 @@ export function AuthPrompt(props: AuthPromptProps) {
           options={options}
           selectedOption={selectedOption()}
           onSelect={(idx) => {
-            if (idx === 0) props.onSelectWebAuth()
-            else setMode("manual_entry")
+            const selected = options[idx]
+            if (selected.disabled) return
+            if (idx === 0) setMode("manual_entry")
           }}
         />
       </Show>
@@ -112,7 +119,7 @@ export function AuthPrompt(props: AuthPromptProps) {
 }
 
 function AuthSelection(props: {
-  options: { key: string; label: string; description: string; recommended: boolean }[]
+  options: { key: string; label: string; description: string; disabled: boolean; tag: string; tagColor: string }[]
   selectedOption: number
   onSelect: (idx: number) => void
 }) {
@@ -121,12 +128,6 @@ function AuthSelection(props: {
   return (
     <box flexDirection="column">
       <box marginBottom={2}>
-        <text>
-          <span style={{ fg: theme.primary, bold: true }}>Welcome to 10x</span>
-        </text>
-      </box>
-
-      <box marginBottom={1}>
         <text>
           <span style={{ fg: theme.text }}>How would you like to authenticate?</span>
         </text>
@@ -143,15 +144,13 @@ function AuthSelection(props: {
                 <span style={{ fg: theme.textMuted }}> [{opt.key}] </span>
                 <span
                   style={{
-                    fg: props.selectedOption === idx ? theme.text : theme.textMuted,
-                    bold: props.selectedOption === idx,
+                    fg: props.selectedOption === idx && !opt.disabled ? theme.text : theme.textMuted,
+                    bold: props.selectedOption === idx && !opt.disabled,
                   }}
                 >
                   {opt.label}
                 </span>
-                <Show when={opt.recommended}>
-                  <span style={{ fg: theme.success }}> (recommended)</span>
-                </Show>
+                <span style={{ fg: opt.tagColor }}> {opt.tag}</span>
               </text>
             </box>
             <box marginLeft={7}>

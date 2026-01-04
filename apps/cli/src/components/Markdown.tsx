@@ -185,37 +185,10 @@ function formatInline(text: string): FormattedPart[] {
 }
 
 function InlineText(props: { content: string }) {
-  const { theme } = useTheme()
-  const parts = createMemo(() => formatInline(String(props.content || "")))
-
   return (
-    <text>
-      <For each={parts()}>
-        {(part) => (
-          <Switch fallback={<text>{String(part.content || "")}</text>}>
-            <Match when={part.type === "bold"}>
-              <text bold>{String(part.content || "")}</text>
-            </Match>
-            <Match when={part.type === "italic"}>
-              <text italic>{String(part.content || "")}</text>
-            </Match>
-            <Match when={part.type === "code"}>
-              <text fg={theme.syntaxString} bg="#1a1a2e">
-                {String(part.content || "")}
-              </text>
-            </Match>
-            <Match when={part.type === "link"}>
-              <text fg={theme.info} underline>
-                {String(part.content || "")}
-              </text>
-            </Match>
-            <Match when={part.type === "text"}>
-              <text>{String(part.content || "")}</text>
-            </Match>
-          </Switch>
-        )}
-      </For>
-    </text>
+    <box flexDirection="column" width="100%">
+      <text>{String(props.content || "")}</text>
+    </box>
   )
 }
 
@@ -229,7 +202,7 @@ export function Markdown(props: MarkdownProps) {
   const blocks = createMemo(() => parseMarkdown(String(props.children || "")))
 
   return (
-    <box flexDirection="column">
+    <box flexDirection="column" width="100%">
       <For each={blocks()}>
         {(block) => (
           <Switch>
@@ -238,16 +211,13 @@ export function Markdown(props: MarkdownProps) {
             </Match>
 
             <Match when={block.type === "heading"}>
-              <box marginTop={1} marginBottom={1}>
-                <text bold fg={theme.primary}>
-                  {block.level === 1 ? "# " : block.level === 2 ? "## " : "### "}
-                  {String(block.content || "")}
-                </text>
-              </box>
+              <text bold fg={theme.primary}>
+                {`${block.level === 1 ? "# " : block.level === 2 ? "## " : "### "}${String(block.content || "")}`}
+              </text>
             </Match>
 
             <Match when={block.type === "blockquote"}>
-              <box marginTop={1} marginBottom={1} paddingLeft={1} border={["left"]} borderColor={theme.textMuted}>
+              <box paddingLeft={1} border={["left"]} borderColor={theme.textMuted}>
                 <text fg={theme.textMuted} italic>
                   {String(block.content || "")}
                 </text>
@@ -255,7 +225,7 @@ export function Markdown(props: MarkdownProps) {
             </Match>
 
             <Match when={block.type === "list"}>
-              <box flexDirection="column" marginTop={1} marginBottom={1}>
+              <box flexDirection="column" width="100%">
                 <For each={String(block.content || "").split("\n")}>
                   {(line) => <InlineText content={String(line || "")} />}
                 </For>
@@ -263,9 +233,7 @@ export function Markdown(props: MarkdownProps) {
             </Match>
 
             <Match when={block.type === "text"}>
-              <box marginTop={1} marginBottom={1}>
-                <InlineText content={String(block.content || "")} />
-              </box>
+              <InlineText content={String(block.content || "")} />
             </Match>
           </Switch>
         )}

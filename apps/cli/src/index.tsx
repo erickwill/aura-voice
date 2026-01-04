@@ -224,7 +224,7 @@ export function tui(args: AppArgs, onExit?: () => Promise<void>): Promise<void> 
       {
         targetFps: 60,
         exitOnCtrlC: false,
-        useMouse: false,
+        useMouse: true,
       }
     )
   })

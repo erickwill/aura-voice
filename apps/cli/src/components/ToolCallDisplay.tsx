@@ -7,24 +7,26 @@ interface ToolCallDisplayProps {
   toolCall: ToolCall
 }
 
-const TOOL_ICONS: Record<string, string> = {
-  read: "📖",
-  write: "✏️",
-  edit: "📝",
-  glob: "🔍",
-  grep: "🔎",
-  bash: "$",
+// Tool-specific colors (matching Claude Code style)
+const TOOL_COLORS: Record<string, string> = {
+  read: "#22C55E",    // green
+  write: "#F59E0B",   // amber
+  edit: "#3B82F6",    // blue
+  bash: "#A855F7",    // purple
+  glob: "#8B5CF6",    // violet
+  grep: "#EC4899",    // pink
 }
-
-// Tools that work with file paths
-const FILE_TOOLS = ["read", "write", "edit"]
 
 function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str
   return str.slice(0, maxLength - 3) + "..."
 }
 
-function getToolSummary(toolCall: ToolCall): string {
+function capitalizeFirst(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+function getToolArgs(toolCall: ToolCall): string {
   const input = toolCall.input
 
   switch (toolCall.name) {
@@ -39,70 +41,93 @@ function getToolSummary(toolCall: ToolCall): string {
     case "grep":
       return String(input.pattern ?? "")
     case "bash":
-      return truncate(String(input.command ?? ""), 50)
+      return truncate(String(input.command ?? ""), 60)
     default:
-      return JSON.stringify(input).slice(0, 50)
+      return truncate(JSON.stringify(input), 50)
   }
 }
 
-function StatusIndicator(props: { status: ToolCall["status"] }) {
-  const { theme } = useTheme()
+function getResultSummary(toolCall: ToolCall): string | null {
+  if (toolCall.status !== "success" || !toolCall.output) return null
 
-  return (
-    <Switch>
-      <Match when={props.status === "pending"}>
-        <text fg={theme.textMuted}>○</text>
-      </Match>
-      <Match when={props.status === "running"}>
-        <text fg={theme.primary}>...</text>
-      </Match>
-      <Match when={props.status === "success"}>
-        <text fg={theme.success}>✓</text>
-      </Match>
-      <Match when={props.status === "error"}>
-        <text fg={theme.error}>✗</text>
-      </Match>
-    </Switch>
-  )
+  const output = toolCall.output.output
+  if (!output) return "(No content)"
+
+  // For file reads, show line count
+  if (toolCall.name === "read") {
+    const lines = String(output).split("\n").length
+    return `Read ${lines} lines`
+  }
+
+  // For writes, show success
+  if (toolCall.name === "write") {
+    return "Written"
+  }
+
+  // For edits
+  if (toolCall.name === "edit") {
+    return "Edited"
+  }
+
+  // For bash, truncate output
+  if (toolCall.name === "bash") {
+    const lines = String(output).trim().split("\n")
+    if (lines.length === 1) {
+      return truncate(lines[0], 80)
+    }
+    return `${lines.length} lines`
+  }
+
+  // For glob/grep, show match count
+  if (toolCall.name === "glob" || toolCall.name === "grep") {
+    const lines = String(output).trim().split("\n").filter(l => l.trim())
+    return `Found ${lines.length} matches`
+  }
+
+  return truncate(String(output), 80)
 }
 
 export function ToolCallDisplay(props: ToolCallDisplayProps) {
   const { theme } = useTheme()
 
-  const icon = () => TOOL_ICONS[props.toolCall.name] ?? "?"
-  const summary = () => getToolSummary(props.toolCall)
-  const isFileTool = () => FILE_TOOLS.includes(props.toolCall.name)
-  const filePath = () => String(props.toolCall.input?.path ?? "")
+  const bulletColor = () => TOOL_COLORS[props.toolCall.name] ?? theme.textMuted
+  const toolName = () => capitalizeFirst(props.toolCall.name)
+  const args = () => getToolArgs(props.toolCall)
+  const resultSummary = () => getResultSummary(props.toolCall)
 
   return (
-    <box flexDirection="column" marginTop={1} marginBottom={1}>
+    <box flexDirection="column" marginBottom={1}>
+      {/* Main tool call line: ● ToolName(args) */}
       <box flexDirection="row">
-        <text fg={theme.textMuted}>│ ┌─ </text>
-        <text>{String(icon() || "?")} </text>
-        <text fg={theme.text} bold>
-          {String(props.toolCall.name || "")}
-        </text>
-        <text fg={theme.textMuted}>: </text>
-        <Show
-          when={isFileTool() && filePath()}
-          fallback={<text fg={theme.textMuted}>{String(summary() || "")}</text>}
-        >
-          <FileLink path={filePath()} />
-        </Show>
-        <text> </text>
-        <StatusIndicator status={props.toolCall.status} />
+        <Switch>
+          <Match when={props.toolCall.status === "running"}>
+            <text fg={bulletColor()}>{"⠋ "}</text>
+          </Match>
+          <Match when={props.toolCall.status === "error"}>
+            <text fg={theme.error}>{"✗ "}</text>
+          </Match>
+          <Match when={true}>
+            <text fg={bulletColor()}>{"● "}</text>
+          </Match>
+        </Switch>
+        <text fg={theme.text} bold>{toolName()}</text>
+        <text fg={theme.textMuted}>{"("}</text>
+        <text fg={theme.text}>{args()}</text>
+        <text fg={theme.textMuted}>{")"}</text>
       </box>
 
-      <Show when={props.toolCall.status === "success" && props.toolCall.output?.output}>
-        <box paddingLeft={4}>
-          <text fg={theme.textMuted}>│ └─ </text>
-          <text fg={theme.success}>{truncate(String(props.toolCall.output!.output || ""), 100)}</text>
+      {/* Result line */}
+      <Show when={resultSummary()}>
+        <box flexDirection="row" paddingLeft={2}>
+          <text fg={theme.textMuted}>{"└─ "}</text>
+          <text fg={theme.textMuted}>{resultSummary()}</text>
         </box>
       </Show>
 
+      {/* Error line */}
       <Show when={props.toolCall.status === "error" && props.toolCall.output?.error}>
-        <box paddingLeft={4}>
-          <text fg={theme.textMuted}>│ └─ </text>
+        <box flexDirection="row" paddingLeft={2}>
+          <text fg={theme.textMuted}>{"└─ "}</text>
           <text fg={theme.error}>{truncate(String(props.toolCall.output!.error || ""), 100)}</text>
         </box>
       </Show>

@@ -24,6 +24,7 @@ export interface SessionSummary {
   createdAt: Date;
   updatedAt: Date;
   state: Session['state'];
+  lastUserPrompt?: string;
 }
 
 export interface CreateSessionOptions {
