@@ -4,12 +4,14 @@ import {
   Router,
   createCoreToolRegistry,
   PermissionManager,
+  type AIProviderConfig,
 } from "@10x/core"
 import type { Message, ModelTier, RoutingMode, ChatMessage, ToolCall, ContentPart } from "@10x/shared"
-import type { AuthMode } from "../config"
+import { getApiKey, getAuthToken, getAuthMode, type AuthMode } from "../config"
 
 // 10x API proxy URL
 const TEN_X_API_URL = process.env.TEN_X_API_URL || 'https://10x.dev/api/v1';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 
 interface UseChatOptions {
   apiKey?: string        // OpenRouter API key (BYOK mode)
@@ -63,17 +65,32 @@ export function useChat({
 
   const getRouter = () => {
     if (!router) {
-      // Configure client based on auth mode
+      // Read fresh auth values from config (not closure) to ensure we get latest
+      const currentAuthMode = getAuthMode()
+      const currentApiKey = getApiKey()
+      const currentAuthToken = getAuthToken()
+
+      // Configure client and AI provider based on auth mode
       let client: OpenRouterClient
-      if (authMode === '10x' && authToken) {
+      let aiProviderConfig: AIProviderConfig
+
+      if (currentAuthMode === '10x' && currentAuthToken) {
         // 10x auth mode: use our API proxy
         client = new OpenRouterClient({
-          apiKey: authToken,
+          apiKey: currentAuthToken,
           baseURL: TEN_X_API_URL,
         })
+        aiProviderConfig = {
+          apiKey: currentAuthToken,
+          baseURL: TEN_X_API_URL,
+        }
       } else {
         // BYOK mode: use OpenRouter directly
-        client = new OpenRouterClient({ apiKey: apiKey || '' })
+        client = new OpenRouterClient({ apiKey: currentApiKey || '' })
+        aiProviderConfig = {
+          apiKey: currentApiKey || '',
+          baseURL: OPENROUTER_URL,
+        }
       }
 
       if (enableTools) {
@@ -84,6 +101,7 @@ export function useChat({
       }
       router = new Router({
         client,
+        aiProviderConfig,
         tools: tools ?? undefined,
         defaultTier,
         systemPrompt,
@@ -162,7 +180,9 @@ export function useChat({
         setCurrentTier(responseTier)
 
         if (event.type === "text" && event.content) {
-          fullContent += event.content
+          // Ensure content is always a string
+          const textContent = typeof event.content === 'string' ? event.content : String(event.content)
+          fullContent += textContent
 
           setMessages((prev) => {
             const updated = [...prev]

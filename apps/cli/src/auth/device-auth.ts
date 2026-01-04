@@ -5,6 +5,8 @@
  * for authenticating CLI users via browser.
  */
 
+import { getApiUrl } from '../config'
+
 export interface DeviceCodeResponse {
   deviceCode: string
   userCode: string
@@ -40,13 +42,13 @@ export class DeviceAuthError extends Error {
   }
 }
 
-const DEFAULT_API_URL = process.env.TENX_API_URL || "http://localhost:3000"
+const getDefaultApiUrl = () => getApiUrl()
 
 /**
  * Request a new device code from the server
  */
 export async function requestDeviceCode(
-  apiUrl: string = DEFAULT_API_URL
+  apiUrl: string = getDefaultApiUrl()
 ): Promise<DeviceCodeResponse> {
   try {
     const response = await fetch(`${apiUrl}/api/auth/device`, {
@@ -91,7 +93,7 @@ export async function requestDeviceCode(
  * @throws DeviceAuthError if polling fails or times out
  */
 export async function pollForToken(
-  apiUrl: string = DEFAULT_API_URL,
+  apiUrl: string = getDefaultApiUrl(),
   deviceCode: string,
   interval: number = 5,
   maxAttempts: number = 180 // 15 minutes at 5s intervals
@@ -164,7 +166,7 @@ export async function pollForToken(
  * Validate an existing API token
  */
 export async function validateToken(
-  apiUrl: string = DEFAULT_API_URL,
+  apiUrl: string = getDefaultApiUrl(),
   token: string
 ): Promise<boolean> {
   try {

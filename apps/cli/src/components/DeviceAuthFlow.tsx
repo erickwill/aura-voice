@@ -1,6 +1,7 @@
 import { createSignal, createEffect, onCleanup, Show } from "solid-js"
 import { useKeyboard } from "@opentui/solid"
 import { useTheme } from "../context"
+import { getApiUrl } from "../config"
 import {
   requestDeviceCode,
   createCancellablePolling,
@@ -20,7 +21,7 @@ type FlowState = "loading" | "showing_code" | "polling" | "success" | "error"
 
 export function DeviceAuthFlow(props: DeviceAuthFlowProps) {
   const { theme } = useTheme()
-  const apiUrl = () => props.apiUrl || process.env.TENX_API_URL || "http://localhost:3000"
+  const apiUrl = () => props.apiUrl || getApiUrl()
 
   const [state, setState] = createSignal<FlowState>("loading")
   const [deviceCode, setDeviceCode] = createSignal<DeviceCodeResponse | null>(null)

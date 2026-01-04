@@ -73,12 +73,12 @@ export function CommandPalette(props: CommandPaletteProps) {
                   {isSelected() ? ">" : " "}
                 </text>
                 <text fg={isSelected() ? theme.primary : theme.secondary} bold={isSelected()}>
-                  /{item.cmd.name}
+                  /{String(item.cmd.name || "")}
                 </text>
                 <Show when={item.cmd.args}>
-                  <text fg={theme.textMuted}>{item.cmd.args}</text>
+                  <text fg={theme.textMuted}>{String(item.cmd.args || "")}</text>
                 </Show>
-                <text fg={theme.textMuted}>{item.cmd.description}</text>
+                <text fg={theme.textMuted}>{String(item.cmd.description || "")}</text>
               </box>
             )
           }}

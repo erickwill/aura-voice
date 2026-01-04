@@ -111,17 +111,17 @@ function DeviceAuthContent() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gray-950">
+    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-[#0a0a0a]">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-cyan-400 mb-2">10x</h1>
-          <p className="text-gray-400">Authorize your CLI</p>
+          <h1 className="text-4xl font-bold text-white mb-2">10x</h1>
+          <p className="text-gray-500">Authorize your CLI</p>
         </div>
 
         {pageStatus === 'success' ? (
-          <div className="bg-green-900/30 border border-green-500 rounded-lg p-6 text-center">
+          <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-2xl p-6 text-center">
             <div className="text-4xl mb-4">✓</div>
-            <h2 className="text-xl font-semibold text-green-400 mb-2">Device Authorized</h2>
+            <h2 className="text-xl font-semibold text-emerald-400 mb-2">Device Authorized</h2>
             <p className="text-gray-400">
               You can now return to your terminal. The CLI will be authenticated shortly.
             </p>
@@ -130,14 +130,14 @@ function DeviceAuthContent() {
           <>
             {/* Show sign in prompt if not authenticated */}
             {!authLoading && !user && (
-              <div className="bg-gray-900 rounded-lg p-6 mb-6">
-                <p className="text-gray-300 mb-4 text-center">
+              <div className="bg-[#111] rounded-2xl p-6 mb-6 border border-white/[0.08]">
+                <p className="text-gray-400 mb-4 text-center">
                   Sign in to authorize your CLI
                 </p>
                 <div className="space-y-3">
                   <button
                     onClick={signInWithGitHub}
-                    className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors border border-gray-700"
+                    className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white/5 hover:bg-white/10 rounded-xl font-medium transition-colors border border-white/[0.08] text-white"
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                       <path
@@ -151,7 +151,7 @@ function DeviceAuthContent() {
 
                   <button
                     onClick={signInWithGoogle}
-                    className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors border border-gray-700"
+                    className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white/5 hover:bg-white/10 rounded-xl font-medium transition-colors border border-white/[0.08] text-white"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -167,7 +167,7 @@ function DeviceAuthContent() {
 
             {/* Show user info if authenticated */}
             {user && (
-              <div className="bg-gray-900 rounded-lg p-4 mb-6 flex items-center gap-3">
+              <div className="bg-[#111] rounded-2xl p-4 mb-6 flex items-center gap-3 border border-white/[0.08]">
                 {user.user_metadata?.avatar_url && (
                   <img
                     src={user.user_metadata.avatar_url}
@@ -176,15 +176,15 @@ function DeviceAuthContent() {
                   />
                 )}
                 <div>
-                  <p className="text-gray-200 font-medium">{user.user_metadata?.full_name || user.user_metadata?.name}</p>
+                  <p className="text-white font-medium">{user.user_metadata?.full_name || user.user_metadata?.name}</p>
                   <p className="text-gray-500 text-sm">{user.email}</p>
                 </div>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="bg-gray-900 rounded-lg p-6">
-                <label htmlFor="code" className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="bg-[#111] rounded-2xl p-6 border border-white/[0.08]">
+                <label htmlFor="code" className="block text-sm font-medium text-gray-400 mb-2">
                   Enter the code shown in your terminal
                 </label>
                 <input
@@ -193,7 +193,7 @@ function DeviceAuthContent() {
                   value={code}
                   onChange={handleCodeChange}
                   placeholder="XXXX-XXXX"
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-center text-2xl font-mono tracking-wider focus:outline-none focus:border-cyan-400 text-white"
+                  className="w-full px-4 py-3 bg-black/60 border border-white/[0.08] rounded-xl text-center text-2xl font-mono tracking-wider focus:outline-none focus:border-white/20 text-white"
                   maxLength={9}
                   autoFocus
                   disabled={authLoading}
@@ -201,7 +201,7 @@ function DeviceAuthContent() {
               </div>
 
               {pageStatus === 'error' && (
-                <div className="bg-red-900/30 border border-red-500 rounded-lg p-4 text-red-400">
+                <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">
                   {errorMessage}
                 </div>
               )}
@@ -209,7 +209,7 @@ function DeviceAuthContent() {
               <button
                 type="submit"
                 disabled={code.replace(/-/g, '').length < 8 || pageStatus === 'loading' || authLoading}
-                className="w-full py-3 px-4 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-lg font-medium transition-colors text-white"
+                className="w-full py-3 px-4 bg-white hover:bg-gray-100 disabled:bg-white/10 disabled:text-gray-500 disabled:cursor-not-allowed rounded-xl font-medium transition-colors text-black"
               >
                 {pageStatus === 'loading' ? 'Authorizing...' : user ? 'Authorize Device' : 'Sign in to Authorize'}
               </button>
@@ -217,8 +217,8 @@ function DeviceAuthContent() {
           </>
         )}
 
-        <p className="mt-8 text-center text-sm text-gray-500">
-          Need help? Run <code className="text-cyan-400">10x --help</code> in your terminal.
+        <p className="mt-8 text-center text-sm text-gray-600">
+          Need help? Run <code className="text-gray-400 bg-white/5 px-1.5 py-0.5 rounded">10x --help</code> in your terminal.
         </p>
       </div>
     </main>
@@ -227,7 +227,7 @@ function DeviceAuthContent() {
 
 export default function DeviceAuthPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-gray-950"><p className="text-gray-400">Loading...</p></div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]"><p className="text-gray-500">Loading...</p></div>}>
       <DeviceAuthContent />
     </Suspense>
   );

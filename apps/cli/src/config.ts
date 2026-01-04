@@ -9,9 +9,13 @@ export interface AppConfig {
   apiKey?: string;          // OpenRouter API key (BYOK mode)
   authToken?: string;       // 10x API token (10x auth mode)
   authMode?: AuthMode;      // Which auth mode is active
+  apiUrl?: string;          // 10x API URL
   defaultModel: ModelTier;
   lastSessionId?: string;
 }
+
+// Default API URL for 10x cloud
+export const DEFAULT_API_URL = 'https://try10x.co';
 
 const CONFIG_DIR = join(homedir(), '.config', '10x');
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
@@ -168,4 +172,21 @@ export function clearAuth(): void {
  */
 export function getConfigDir(): string {
   return CONFIG_DIR;
+}
+
+/**
+ * Get the API URL from config or default
+ */
+export function getApiUrl(): string {
+  const config = loadConfig();
+  return config.apiUrl ?? DEFAULT_API_URL;
+}
+
+/**
+ * Save the API URL to config
+ */
+export function saveApiUrl(url: string): void {
+  const config = loadConfig();
+  config.apiUrl = url;
+  saveConfig(config);
 }

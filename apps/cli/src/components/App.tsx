@@ -125,6 +125,20 @@ export function App(props: AppProps) {
     permissionManager: permissions.manager,
   })
 
+  // Debug logging
+  createEffect(() => {
+    const msgs = chat.messages
+    if (msgs.length > 0) {
+      const lastMsg = msgs[msgs.length - 1]
+      console.error('[DEBUG] Last message:', {
+        role: lastMsg.role,
+        contentType: typeof lastMsg.content,
+        content: lastMsg.content?.slice?.(0, 100),
+        toolCalls: lastMsg.toolCalls?.length,
+      })
+    }
+  })
+
   // Build command list for palette
   const allCommands = createMemo(() => {
     const skills = listSkillNames()
@@ -571,7 +585,7 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
                   {authMode() === "10x" ? "10x" : "BYOK"}
                 </span>
                 <span style={{ fg: theme.textMuted }}> • </span>
-                <span style={{ fg: theme.primary }}>◆ {routingMode() === "auto" ? `auto (${chat.currentTier})` : chat.currentTier}</span>
+                <span style={{ fg: theme.primary }}>◆ {routingMode() === "auto" ? `auto (${String(chat.currentTier || "smart")})` : String(chat.currentTier || "smart")}</span>
               </text>
               <text>
                 <span style={{ fg: theme.textMuted }}>℗ {process.cwd()}</span>
@@ -593,8 +607,9 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
                     <text fg="#8B5CF6">{bannerLines[4]}</text>
                     <text fg="#A855F7">{bannerLines[5]}</text>
                     <text>{"\n"}</text>
-                    <text fg={theme.textMuted}>{chat.currentTier}</text>
+                    <text fg={theme.textMuted}>{String(chat.currentTier || "smart")}</text>
                     <text fg={theme.textMuted}>{process.cwd()}</text>
+                    <text fg={theme.textMuted}>build: 2026-01-04-v2</text>
                   </box>
                 }
               >
@@ -617,7 +632,7 @@ Execute each step thoroughly, showing your work for each step. Use the tools ava
 
               <Show when={chat.error && !chat.usageLimitExceeded}>
                 <box marginTop={1} marginBottom={1}>
-                  <text fg={theme.error}>Error: {chat.error}</text>
+                  <text fg={theme.error}>Error: {String(chat.error || "Unknown error")}</text>
                 </box>
               </Show>
 

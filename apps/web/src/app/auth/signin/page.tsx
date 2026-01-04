@@ -30,24 +30,24 @@ function SignInContent() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gray-950">
+    <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-[#0a0a0a]">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-cyan-400 mb-2">10x</h1>
-          <p className="text-gray-400">Sign in to continue</p>
+          <h1 className="text-4xl font-bold text-white mb-2">10x</h1>
+          <p className="text-gray-500">Sign in to continue</p>
         </div>
 
         {error && (
-          <div className="bg-red-900/30 border border-red-500 rounded-lg p-4 mb-6 text-red-400 text-center">
+          <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4 mb-6 text-red-400 text-center text-sm">
             {error === 'callback_error' && 'Error during authentication'}
             {error !== 'callback_error' && 'An error occurred during sign in'}
           </div>
         )}
 
-        <div className="bg-gray-900 rounded-lg p-6 space-y-4">
+        <div className="bg-[#111] rounded-2xl p-6 space-y-4 border border-white/[0.08]">
           <button
             onClick={signInWithGitHub}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors border border-gray-700"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white/5 hover:bg-white/10 rounded-xl font-medium transition-colors border border-white/[0.08] text-white"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path
@@ -61,7 +61,7 @@ function SignInContent() {
 
           <button
             onClick={signInWithGoogle}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors border border-gray-700"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white/5 hover:bg-white/10 rounded-xl font-medium transition-colors border border-white/[0.08] text-white"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -85,7 +85,7 @@ function SignInContent() {
           </button>
         </div>
 
-        <p className="mt-8 text-center text-sm text-gray-500">
+        <p className="mt-8 text-center text-sm text-gray-600">
           By signing in, you agree to our Terms of Service and Privacy Policy.
         </p>
       </div>
@@ -95,7 +95,7 @@ function SignInContent() {
 
 export default function SignInPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-gray-950"><p className="text-gray-400">Loading...</p></div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#0a0a0a]"><p className="text-gray-500">Loading...</p></div>}>
       <SignInContent />
     </Suspense>
   );

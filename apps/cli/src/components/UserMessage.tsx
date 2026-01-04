@@ -15,7 +15,7 @@ export function UserMessage(props: UserMessageProps) {
         </text>
       </box>
       <box paddingLeft={2}>
-        <text fg={theme.text}>{props.content}</text>
+        <text fg={theme.text}>{String(props.content || "")}</text>
       </box>
     </box>
   )

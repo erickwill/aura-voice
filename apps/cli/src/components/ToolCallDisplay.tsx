@@ -78,14 +78,14 @@ export function ToolCallDisplay(props: ToolCallDisplayProps) {
     <box flexDirection="column" marginTop={1} marginBottom={1}>
       <box flexDirection="row">
         <text fg={theme.textMuted}>│ ┌─ </text>
-        <text>{icon()} </text>
+        <text>{String(icon() || "?")} </text>
         <text fg={theme.text} bold>
-          {props.toolCall.name}
+          {String(props.toolCall.name || "")}
         </text>
         <text fg={theme.textMuted}>: </text>
         <Show
           when={isFileTool() && filePath()}
-          fallback={<text fg={theme.textMuted}>{summary()}</text>}
+          fallback={<text fg={theme.textMuted}>{String(summary() || "")}</text>}
         >
           <FileLink path={filePath()} />
         </Show>
@@ -96,14 +96,14 @@ export function ToolCallDisplay(props: ToolCallDisplayProps) {
       <Show when={props.toolCall.status === "success" && props.toolCall.output?.output}>
         <box paddingLeft={4}>
           <text fg={theme.textMuted}>│ └─ </text>
-          <text fg={theme.success}>{truncate(props.toolCall.output!.output!, 100)}</text>
+          <text fg={theme.success}>{truncate(String(props.toolCall.output!.output || ""), 100)}</text>
         </box>
       </Show>
 
       <Show when={props.toolCall.status === "error" && props.toolCall.output?.error}>
         <box paddingLeft={4}>
           <text fg={theme.textMuted}>│ └─ </text>
-          <text fg={theme.error}>{truncate(props.toolCall.output!.error!, 100)}</text>
+          <text fg={theme.error}>{truncate(String(props.toolCall.output!.error || ""), 100)}</text>
         </box>
       </Show>
     </box>

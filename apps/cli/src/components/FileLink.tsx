@@ -38,7 +38,7 @@ export function FileLink(props: FileLinkProps) {
   return (
     <a href={href()}>
       <text fg={theme.info} underline>
-        {displayName()}
+        {String(displayName() || "")}
       </text>
     </a>
   )
@@ -107,12 +107,12 @@ export function TextWithFileLinks(props: { children: string }) {
           return (
             <a href={`file://${part.path}${part.line ? `:${part.line}` : ""}${part.column ? `:${part.column}` : ""}`}>
               <text fg={theme.info} underline>
-                {part.content}
+                {String(part.content || "")}
               </text>
             </a>
           )
         }
-        return <text>{part.content}</text>
+        return <text>{String(part.content || "")}</text>
       })}
     </text>
   )
