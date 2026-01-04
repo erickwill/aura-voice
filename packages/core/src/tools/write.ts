@@ -1,6 +1,7 @@
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import type { Tool, ToolResult } from '@10x/shared';
+import { WRITE_DESCRIPTION } from '../prompts/tools/write.js';
 
 interface WriteParams {
   path: string;
@@ -9,8 +10,7 @@ interface WriteParams {
 
 export const writeTool: Tool = {
   name: 'write',
-  description:
-    'Write content to a file. Creates parent directories if needed. Overwrites existing files.',
+  description: WRITE_DESCRIPTION,
   parameters: {
     type: 'object',
     properties: {

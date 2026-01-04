@@ -1,4 +1,5 @@
 import type { Tool, ToolResult, OpenRouterTool } from '@10x/shared';
+export type { Tool } from '@10x/shared';
 import type { PermissionManager } from '../permissions/manager.js';
 
 export class ToolRegistry {

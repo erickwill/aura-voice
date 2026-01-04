@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import type { Tool, ToolResult } from '@10x/shared';
+import { EDIT_DESCRIPTION } from '../prompts/tools/edit.js';
 
 interface EditParams {
   path: string;
@@ -10,8 +11,7 @@ interface EditParams {
 
 export const editTool: Tool = {
   name: 'edit',
-  description:
-    'Edit a file by replacing an exact string match. The old_string must appear exactly once in the file.',
+  description: EDIT_DESCRIPTION,
   parameters: {
     type: 'object',
     properties: {

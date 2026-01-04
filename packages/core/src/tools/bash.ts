@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import type { Tool, ToolResult } from '@10x/shared';
+import { BASH_DESCRIPTION } from '../prompts/tools/bash.js';
 
 interface BashParams {
   command: string;
@@ -11,8 +12,7 @@ const MAX_OUTPUT = 30000; // characters
 
 export const bashTool: Tool = {
   name: 'bash',
-  description:
-    'Execute a bash command. Use for running scripts, git commands, package managers, etc.',
+  description: BASH_DESCRIPTION,
   parameters: {
     type: 'object',
     properties: {

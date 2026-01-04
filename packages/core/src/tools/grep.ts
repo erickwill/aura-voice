@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import { resolve } from 'path';
 import { rgPath } from '@vscode/ripgrep';
 import type { Tool, ToolResult } from '@10x/shared';
+import { GREP_DESCRIPTION } from '../prompts/tools/grep.js';
 
 interface GrepParams {
   pattern: string;
@@ -13,8 +14,7 @@ const MAX_RESULTS = 100;
 
 export const grepTool: Tool = {
   name: 'grep',
-  description:
-    'Search for a pattern in files using ripgrep. Returns matching lines with file paths and line numbers.',
+  description: GREP_DESCRIPTION,
   parameters: {
     type: 'object',
     properties: {

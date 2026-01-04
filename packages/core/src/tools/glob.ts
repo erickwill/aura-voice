@@ -1,6 +1,7 @@
 import { glob } from 'glob';
 import { resolve } from 'path';
 import type { Tool, ToolResult } from '@10x/shared';
+import { GLOB_DESCRIPTION } from '../prompts/tools/glob.js';
 
 interface GlobParams {
   pattern: string;
@@ -22,8 +23,7 @@ const MAX_RESULTS = 1000;
 
 export const globTool: Tool = {
   name: 'glob',
-  description:
-    'Find files matching a glob pattern. Returns a list of file paths sorted by modification time.',
+  description: GLOB_DESCRIPTION,
   parameters: {
     type: 'object',
     properties: {

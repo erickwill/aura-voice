@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, statSync } from 'fs';
 import { resolve } from 'path';
 import type { Tool, ToolResult } from '@10x/shared';
+import { READ_DESCRIPTION } from '../prompts/tools/read.js';
 
 const MAX_LINES = 2000;
 const MAX_LINE_LENGTH = 2000;
@@ -13,8 +14,7 @@ interface ReadParams {
 
 export const readTool: Tool = {
   name: 'read',
-  description:
-    'Read a file from the filesystem. Returns file contents with line numbers. Use offset and limit for large files.',
+  description: READ_DESCRIPTION,
   parameters: {
     type: 'object',
     properties: {
