@@ -106,7 +106,7 @@ export default function Home() {
                 {/* Version badge */}
                 <div className="flex justify-center mb-6">
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
-                    <span className="text-sm text-gray-400">v0.0.6 Stable Release</span>
+                    <span className="text-sm text-gray-400">v0.0.7 Stable Release</span>
                     <span className="w-2 h-2 bg-emerald-500 rounded-full" />
                   </div>
                 </div>

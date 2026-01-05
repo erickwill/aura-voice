@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/0xCrunchyy/10x/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
-  <a href="https://www.npmjs.com/package/@10x/cli"><img src="https://img.shields.io/npm/v/@10x/cli.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/10x-cli"><img src="https://img.shields.io/npm/v/10x-cli.svg" alt="npm version"></a>
   <a href="https://github.com/0xCrunchyy/10x"><img src="https://img.shields.io/github/stars/0xCrunchyy/10x?style=social" alt="GitHub stars"></a>
 </p>
 
@@ -19,8 +19,8 @@
 ## Quick Start
 
 ```bash
-bun install -g @10x/cli
-export OPENROUTER_API_KEY=sk-or-...
+npm install -g 10x-cli
+
 10x
 ```
 
