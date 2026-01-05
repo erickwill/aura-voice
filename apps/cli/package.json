@@ -1,23 +1,56 @@
 {
-  "name": "@10x/cli",
-  "version": "0.1.0",
-  "private": true,
+  "name": "10x-cli",
+  "version": "0.0.7",
+  "description": "Up to 20x faster AI coding with multi-step Superpowers. Open-source agent with smart model routing, BYOK, fully self-hosted.",
   "type": "module",
   "bin": {
     "10x": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "bun run script/build.ts && bun run dist/index.js",
     "build": "bun run script/build.ts",
     "start": "bun run dist/index.js",
     "test": "bun test",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": [
+    "ai",
+    "coding",
+    "assistant",
+    "cli",
+    "openrouter",
+    "claude",
+    "gpt",
+    "agent",
+    "superpowers",
+    "model-routing"
+  ],
+  "author": "0xCrunchy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xCrunchyy/10x"
+  },
+  "homepage": "https://try10x.co",
+  "bugs": {
+    "url": "https://github.com/0xCrunchyy/10x/issues"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
+    "@opentui/core": "0.1.66"
+  },
+  "devDependencies": {
     "@10x/core": "workspace:*",
     "@10x/shared": "workspace:*",
     "@opentui/core": "0.1.66",
     "@opentui/solid": "0.1.66",
+    "bun-types": "^1.1.38",
     "chalk": "^5.3.0",
     "clipboardy": "^5.0.2",
     "commander": "^12.1.0",
@@ -28,8 +61,5 @@
     "remeda": "^2.21.0",
     "solid-js": "^1.9.3",
     "strip-ansi": "^7.1.0"
-  },
-  "devDependencies": {
-    "bun-types": "^1.1.38"
   }
 }
